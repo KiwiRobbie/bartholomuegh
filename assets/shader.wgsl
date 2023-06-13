@@ -55,13 +55,17 @@ fn fbm(v: vec3<f32>) -> f32 {
 }
 
 fn skybox(dir: vec3<f32>) -> vec3<f32> {
-    return vec3(fbm(10.0 * dir));
+    return vec3(fbm(10.0 * dir)) * mix(vec3(0.75), vec3(0.25), checker(dir, 5.0));
+}
+
+fn checker(dir: vec3<f32>, frequency: f32) -> f32 {
+    let r = fract(frequency * dir) - vec3(0.5);
+    return sign(r.x * r.y * r.z) * 0.5 + 0.5;
 }
 
 fn surface(point: vec3<f32>) -> vec3<f32> {
-    return vec3(fbm(point * 10.0), 0.0, fbm(vec3(1000.0) + point * 10.0));
+    return vec3(fbm(10.0 * point)) * mix(vec3(0.8, 0.2, 0.2), vec3(0.2, 0.2, 0.8),checker(point, 5.0));
 }
-
 
 @fragment
 fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
