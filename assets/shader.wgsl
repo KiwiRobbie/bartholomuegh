@@ -51,15 +51,9 @@ fn fbm(v: vec3<f32>) -> f32 {
     return (0.5 * noise(1.0 * v) + 0.25 * noise(2.0 * v) + 0.125 * noise(4.0 * v));
 }
 
-
 fn skybox(dir: vec3<f32>) -> vec3<f32> {
-    return vec3(fbm(10.0 * dir)) * mix(
-        vec3(0.75),
-        vec3(0.25),
-        checker(dir, 5.0)
-    );
+    return vec3(fbm(10.0 * dir)) * mix(vec3(0.75), vec3(0.25), checker(dir, 5.0));
 }
-
 
 fn checker(dir: vec3<f32>, frequency: f32) -> f32 {
     let r = fract(frequency * dir) - vec3(0.5);

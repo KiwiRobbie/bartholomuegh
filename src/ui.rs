@@ -6,7 +6,6 @@ use bevy::{prelude::*, render::camera::Camera, render::camera::CameraRenderGraph
 
 use bevy::{
     core_pipeline::{bloom::BloomSettings, fxaa::Fxaa, tonemapping::Tonemapping},
-    prelude::*,
     reflect::TypeRegistryInternal,
     window::PrimaryWindow,
 };
@@ -28,6 +27,7 @@ fn ui_system(
     mut contexts: EguiContexts,
     mut camera_settings_query: Query<(
         &mut MainPassSettings,
+        &Transform,
         Option<&mut BloomSettings>,
         Option<&mut Tonemapping>,
         Option<&mut Fxaa>,
