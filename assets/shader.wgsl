@@ -36,20 +36,57 @@ fn ray_box_dist(r: Ray, vmin: vec3<f32>, vmax: vec3<f32>) -> vec2<f32> {
     return vec2(v7, v8);
 }
 
+fn get_camera(clip_space: vec2<f32>) -> Ray {
+    let pos = uniforms.camera_inverse * vec4(clip_space.x, clip_space.y, 1.0, 1.0);
+    let dir = uniforms.camera_inverse * vec4(clip_space.x, clip_space.y, 0.01, 1.0);
+    let pos2 = pos.xyz / pos.w;
+    let dir2 = normalize(dir.xyz / dir.w - pos2);
+    return Ray(pos2, dir2);
+}
+
 @fragment
 fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
     let clip_space = vec2(1.0, -1.0) * (in.uv * 2.0 - 1.0);
     var output_colour = vec3(0.0);
 
-    let pos = uniforms.camera_inverse * vec4(clip_space.x, clip_space.y, 1.0, 1.0);
-    let dir = uniforms.camera_inverse * vec4(clip_space.x, clip_space.y, 0.01, 1.0);
-    let pos2 = pos.xyz / pos.w;
-    let dir2 = normalize(dir.xyz / dir.w - pos2);
-    var ray = Ray(pos2, dir2);
+    var ray = get_camera(clip_space);
 
-    output_colour = vec3(ray_box_dist(ray, vec3(-0.5), vec3(0.5)).x);
-    // output_colour = ray.dir;
+    var r = ray.pos;
+    var v = ray.dir;
 
-    // output_colour = max(output_colour, vec3(0.0));
+    let r_hat = normalize(r);
+    let phi_hat = normalize(cross(cross(r_hat, v), r_hat));
+
+    // let r_dash = dot(r_hat, v);
+    let phi_dash = dot(phi_hat, v);
+
+    var u = 1.0 / length(r);
+    var u_dash = u - 1.0 / (length(r) + dot(v, r_hat));
+
+    let step_size = uniforms.misc_float;
+    let steps = 1000;
+    for (var i = 0; i < steps; i += 1) {
+        let u_double_dash = -u * (1.0 - 1.5 * u * u);
+        u_dash += u_double_dash * step_size;
+        u += u_dash * step_size;
+
+        let phi_hat = normalize(cross(cross(r_hat, v), r_hat));
+        r += phi_hat * phi_dash * step_size;
+
+    //     v = r_dash * r_hat + phi_dash * phi_hat;
+    //     r += v * step_size;
+    }
+
+    // let dir = 
+
+    r = normalize(r) * (1.0 / u);
+    output_colour = r;
+
+    // output_colour = r + ray_box_dist(ray, vec3(-0.5), vec3(0.5)).x;
+
+    // output_colour = vec3(r_dash, phi_dash, 0.0);
+    // output_colour = r_dash * r_hat;
+
+    output_colour = max(output_colour, vec3(0.0));
     return vec4<f32>(output_colour, 1.0);
 }

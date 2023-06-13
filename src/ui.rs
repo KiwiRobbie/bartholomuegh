@@ -41,7 +41,11 @@ fn ui_system(
                     ui.checkbox(&mut trace_settings.indirect_lighting, "Indirect lighting");
                     ui.checkbox(&mut trace_settings.shadows, "Shadows");
                     ui.checkbox(&mut trace_settings.misc_bool, "Misc");
-                    ui.add(Slider::new(&mut trace_settings.misc_float, 0.0..=1.0).text("Misc"));
+                    ui.add(
+                        Slider::new(&mut trace_settings.misc_float, 0.0001..=0.1)
+                            .text("Misc")
+                            .logarithmic(true),
+                    );
                     if let Some(bloom_settings) = bloom_settings {
                         ui.add(
                             Slider::new(&mut bloom_settings.into_inner().intensity, 0.0..=1.0)

@@ -48,7 +48,7 @@ impl Default for MainPassSettings {
             indirect_lighting: false,
             shadows: true,
             misc_bool: false,
-            misc_float: 1.0,
+            misc_float: 0.02,
         }
     }
 }
