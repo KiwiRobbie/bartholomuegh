@@ -44,6 +44,12 @@ fn get_camera(clip_space: vec2<f32>) -> Ray {
     return Ray(pos2, dir2);
 }
 
+#import "noise.wgsl"
+
+fn skybox(dir: vec3<f32>) -> vec3<f32> {
+    return vec3(pow(noise(100.0 * dir), 3.0));
+}
+
 @fragment
 fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
     let clip_space = vec2(1.0, -1.0) * (in.uv * 2.0 - 1.0);
@@ -54,14 +60,13 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
     var r = ray.pos;
     var v = ray.dir;
 
-    let r_hat = normalize(r);
-    let phi_hat = normalize(cross(cross(r_hat, v), r_hat));
+    var r_hat = normalize(r);
+    let normal = normalize(cross(r_hat, v));
+    var phi_hat = normalize(cross(normal, r_hat));
 
-    // let r_dash = dot(r_hat, v);
     let phi_dash = dot(phi_hat, v);
-
     var u = 1.0 / length(r);
-    var u_dash = u - 1.0 / (length(r) + dot(v, r_hat));
+    var u_dash = 1.0 / (length(r) + dot(v, r_hat)) - u;
 
     let step_size = uniforms.misc_float;
     let steps = 1000;
@@ -70,22 +75,21 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
         u_dash += u_double_dash * step_size;
         u += u_dash * step_size;
 
-        let phi_hat = normalize(cross(cross(r_hat, v), r_hat));
+        r_hat = normalize(r);
+        phi_hat = normalize(cross(normal, r_hat));
         r += phi_hat * phi_dash * step_size;
-
-    //     v = r_dash * r_hat + phi_dash * phi_hat;
-    //     r += v * step_size;
     }
 
-    // let dir = 
+    // r = normalize(r) * (1.0 / u);
 
-    r = normalize(r) * (1.0 / u);
-    output_colour = r;
+    r_hat = normalize(r);
+    phi_hat = normalize(cross(normal, r_hat));
 
-    // output_colour = r + ray_box_dist(ray, vec3(-0.5), vec3(0.5)).x;
+    let r_dash = 1.0 / (u + u_dash) - 1.0 / u;
+    let dir = phi_dash * phi_hat + r_dash * r_hat;
 
-    // output_colour = vec3(r_dash, phi_dash, 0.0);
-    // output_colour = r_dash * r_hat;
+    output_colour = skybox(normalize(dir));
+
 
     output_colour = max(output_colour, vec3(0.0));
     return vec4<f32>(output_colour, 1.0);
