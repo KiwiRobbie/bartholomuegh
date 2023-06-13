@@ -38,7 +38,8 @@ pub struct MainPassSettings {
     pub indirect_lighting: bool,
     pub shadows: bool,
     pub misc_bool: bool,
-    pub misc_float: f32,
+    pub step_size: f32,
+    pub step_count: i32,
 }
 
 impl Default for MainPassSettings {
@@ -48,7 +49,8 @@ impl Default for MainPassSettings {
             indirect_lighting: false,
             shadows: true,
             misc_bool: false,
-            misc_float: 0.02,
+            step_size: 0.02,
+            step_count: 250,
         }
     }
 }
@@ -62,7 +64,8 @@ pub struct TraceUniforms {
     pub indirect_lighting: u32,
     pub shadows: u32,
     pub misc_bool: u32,
-    pub misc_float: f32,
+    pub step_size: f32,
+    pub step_count: i32,
 }
 
 #[derive(Component, Deref, DerefMut)]
@@ -94,7 +97,8 @@ fn prepare_uniforms(
             indirect_lighting: settings.indirect_lighting as u32,
             shadows: settings.shadows as u32,
             misc_bool: settings.misc_bool as u32,
-            misc_float: settings.misc_float,
+            step_size: settings.step_size,
+            step_count: settings.step_count,
         };
 
         let mut uniform_buffer = UniformBuffer::from(uniforms);
