@@ -46,9 +46,37 @@ fn get_camera(clip_space: vec2<f32>) -> Ray {
 
 #import "noise.wgsl"
 
-fn skybox(dir: vec3<f32>) -> vec3<f32> {
-    return vec3(pow(noise(100.0 * dir), 3.0));
+fn fbm(v: vec3<f32>) -> f32 {
+    return (
+           0.5*noise(1.0*v)
+         +0.25*noise(2.0*v)
+        +0.125*noise(4.0*v)
+     
+    );
 }
+
+
+fn skybox(dir: vec3<f32>) -> vec3<f32> {
+
+
+
+    return vec3(fbm(10.0 * dir));
+    // return round(10.0*dir)/10.0;
+    
+    // let v = fract(10.0*normalize(dir))*2.0 - 1.0;
+    // return vec3(sign(v.x*v.y*v.z));
+    // return vec3(pow(noise(100.0 * dir), 3.0));
+}
+
+fn surface(point: vec3<f32>) -> vec3<f32> {
+    return vec3(fbm(point* 10.0), 0.0, fbm(vec3(1000.0) + point* 10.0));
+    // return round(10.0*dir)/10.0;
+    
+    // let v = fract(10.0*normalize(dir))*2.0 - 1.0;
+    // return vec3(sign(v.x*v.y*v.z));
+    // return vec3(pow(noise(100.0 * dir), 3.0));
+}
+
 
 @fragment
 fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
@@ -60,37 +88,43 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
     var r = ray.pos;
     var v = ray.dir;
 
-    var r_hat = normalize(r);
-    let normal = normalize(cross(r_hat, v));
-    var phi_hat = normalize(cross(normal, r_hat));
 
-    let phi_dash = dot(phi_hat, v);
-    var u = 1.0 / length(r);
-    var u_dash = 1.0 / (length(r) + dot(v, r_hat)) - u;
+    let h_vec = cross(r, v);
+    let h2 = dot(h_vec,h_vec);
 
-    let step_size = uniforms.misc_float;
-    let steps = 1000;
+
+
+    // var r_hat = normalize(r);
+    // let normal = normalize(cross(r_hat, v));
+    // var phi_hat = normalize(cross(normal, r_hat));
+
+    // let phi_dash = dot(phi_hat, v);
+    // var u = 1.0 / length(r);
+    // var d_u = -1.0/sqrt(length(r))*dot(r_hat, v);
+    // var d_u = 1.0 / (length(r) + dot(v, r_hat)) - u;
+
+    let step_size =  uniforms.misc_float;
+    let steps = 2000;
+
+    var hit = 0.0; 
+    var phi = 0.0; 
     for (var i = 0; i < steps; i += 1) {
-        let u_double_dash = -u * (1.0 - 1.5 * u * u);
-        u_dash += u_double_dash * step_size;
-        u += u_dash * step_size;
+        r += v * step_size;
+        let dv = -1.5*h2*r / pow(dot(r,r), 2.5);
+        v+=dv*step_size;
 
-        r_hat = normalize(r);
-        phi_hat = normalize(cross(normal, r_hat));
-        r += phi_hat * phi_dash * step_size;
+        if (dot(r,r) < 2.0) { 
+            hit = 1.0; 
+            break; 
+        }
     }
 
     // r = normalize(r) * (1.0 / u);
 
-    r_hat = normalize(r);
-    phi_hat = normalize(cross(normal, r_hat));
-
-    let r_dash = 1.0 / (u + u_dash) - 1.0 / u;
-    let dir = phi_dash * phi_hat + r_dash * r_hat;
-
-    output_colour = skybox(normalize(dir));
+    let r_hat = normalize(r);
+    let v_hat = normalize(v);
 
 
-    output_colour = max(output_colour, vec3(0.0));
+    output_colour = max( mix( skybox( v_hat), surface(r_hat), hit ), vec3(0.0));
     return vec4<f32>(output_colour, 1.0);
 }

@@ -1,4 +1,9 @@
-use crate::render_pipeline::MainPassSettings;
+use crate::{
+    character::{self, CharacterEntity},
+    render_pipeline::MainPassSettings,
+};
+use bevy::{prelude::*, render::camera::CameraRenderGraph};
+
 use bevy::{
     core_pipeline::{bloom::BloomSettings, fxaa::Fxaa, tonemapping::Tonemapping},
     prelude::*,
@@ -7,7 +12,7 @@ use bevy::{
 };
 use bevy_inspector_egui::{
     bevy_egui::{EguiContexts, EguiPlugin},
-    egui::{self, Slider},
+    egui::{self, DragValue, Label, Slider},
     reflect_inspector::ui_for_value,
 };
 
@@ -29,6 +34,7 @@ fn ui_system(
         Option<&mut Projection>,
     )>,
     window: Query<Entity, With<PrimaryWindow>>,
+    camera: Query<&Transform>,
 ) {
     egui::Window::new("Settings")
         .anchor(egui::Align2::RIGHT_TOP, [-5.0, 5.0])
@@ -83,5 +89,12 @@ fn ui_system(
                     }
                 });
             }
+            for transform in &camera {
+                ui.add(Label::new(&transform.translation.x.to_string()));
+                ui.add(Label::new(&transform.translation.y.to_string()));
+                ui.add(Label::new(&transform.translation.z.to_string()));
+            }
+            // let test = character.single();
+            // if let CharacterEntity(character) = character.single() {}
         });
 }
