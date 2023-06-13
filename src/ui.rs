@@ -1,18 +1,14 @@
-use crate::{
-    character::{self, CharacterEntity},
-    render_pipeline::MainPassSettings,
-};
-use bevy::{prelude::*, render::camera::CameraRenderGraph};
+use crate::render_pipeline::MainPassSettings;
+use bevy::prelude::*;
 
 use bevy::{
     core_pipeline::{bloom::BloomSettings, fxaa::Fxaa, tonemapping::Tonemapping},
-    prelude::*,
     reflect::TypeRegistryInternal,
     window::PrimaryWindow,
 };
 use bevy_inspector_egui::{
     bevy_egui::{EguiContexts, EguiPlugin},
-    egui::{self, DragValue, Label, Slider},
+    egui::{self, Slider},
     reflect_inspector::ui_for_value,
 };
 
@@ -28,19 +24,21 @@ fn ui_system(
     mut contexts: EguiContexts,
     mut camera_settings_query: Query<(
         &mut MainPassSettings,
+        &Transform,
         Option<&mut BloomSettings>,
         Option<&mut Tonemapping>,
         Option<&mut Fxaa>,
         Option<&mut Projection>,
     )>,
     window: Query<Entity, With<PrimaryWindow>>,
-    camera: Query<&Transform>,
 ) {
     egui::Window::new("Settings")
         .anchor(egui::Align2::RIGHT_TOP, [-5.0, 5.0])
         .show(contexts.ctx_for_window_mut(window.single()), |ui| {
-            for (i, (mut trace_settings, bloom_settings, tonemapping, fxaa, projection)) in
-                camera_settings_query.iter_mut().enumerate()
+            for (
+                i,
+                (mut trace_settings, transform, bloom_settings, tonemapping, fxaa, projection),
+            ) in camera_settings_query.iter_mut().enumerate()
             {
                 ui.collapsing(format!("Camera Settings {}", i), |ui| {
                     ui.checkbox(&mut trace_settings.show_ray_steps, "Show ray steps");
@@ -87,14 +85,12 @@ fn ui_system(
                             }
                         }
                     }
+
+                    ui.label(format!(
+                        "Pos: {:.2}, {:.2}, {:.2}",
+                        transform.translation.x, transform.translation.y, transform.translation.z
+                    ));
                 });
             }
-            for transform in &camera {
-                ui.add(Label::new(&transform.translation.x.to_string()));
-                ui.add(Label::new(&transform.translation.y.to_string()));
-                ui.add(Label::new(&transform.translation.z.to_string()));
-            }
-            // let test = character.single();
-            // if let CharacterEntity(character) = character.single() {}
         });
 }
