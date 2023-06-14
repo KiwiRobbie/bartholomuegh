@@ -189,8 +189,8 @@ impl RayState {
         let dp_theta = self.dp_theta();
 
         if dr > 100.0 || dphi > 100.0 || dtheta > 100.0 || dp_r > 100.0 || dp_theta > 100.0 {
-            // dbg!(&self);
-            // loop {}
+            dbg!(&self);
+            loop {}
         }
 
         // Update state values
@@ -254,7 +254,7 @@ impl BoyerLindquistObserver {
 const OUT_FILE_NAME: &'static str = "plots/3d-plot.svg";
 use plotters::prelude::*;
 fn main() {
-    let bh = BhParameters { a: 0.0 };
+    let bh = BhParameters { a: 0.999 };
     let r_c: f32 = 4.0;
     let theta_c: f32 = 0.5 * PI;
     let phi_c: f32 = 0.0;
@@ -271,66 +271,76 @@ fn main() {
         B_phi: 1.0,
     };
 
-    let area = SVGBackend::new(OUT_FILE_NAME, (1024, 760)).into_drawing_area();
+    let mut ray = observer.fido_ray(Vec3::new(1.0, 0.0, 0.0), bh);
 
-    area.fill(&WHITE).unwrap();
+    dbg!((
+        ray.dr(),
+        ray.dtheta(),
+        ray.dphi(),
+        ray.dp_r(),
+        ray.dp_theta(),
+    ));
 
-    let x_axis = (-3.0..3.0).step(0.1);
-    let z_axis = (-3.0..3.0).step(0.1);
+    // let area = SVGBackend::new(OUT_FILE_NAME, (1024, 760)).into_drawing_area();
 
-    let mut chart = ChartBuilder::on(&area)
-        .caption(format!("3D Plot Test"), ("sans", 20))
-        .build_cartesian_3d(x_axis.clone(), -3.0..3.0, z_axis.clone())
-        .unwrap();
+    // area.fill(&WHITE).unwrap();
 
-    chart.with_projection(|mut pb| {
-        pb.yaw = 0.5;
-        pb.scale = 0.9;
-        pb.into_matrix()
-    });
+    // let x_axis = (-3.0..3.0).step(0.1);
+    // let z_axis = (-3.0..3.0).step(0.1);
 
-    chart
-        .configure_axes()
-        .light_grid_style(BLACK.mix(0.15))
-        .max_light_lines(3)
-        .draw()
-        .unwrap();
+    // let mut chart = ChartBuilder::on(&area)
+    //     .caption(format!("3D Plot Test"), ("sans", 20))
+    //     .build_cartesian_3d(x_axis.clone(), -3.0..3.0, z_axis.clone())
+    //     .unwrap();
 
-    for i in 0..10 {
-        let n_theta = PI * (i as f32) / 5.0;
+    // chart.with_projection(|mut pb| {
+    //     pb.yaw = 0.5;
+    //     pb.scale = 0.9;
+    //     pb.into_matrix()
+    // });
 
-        let mut ray =
-            observer.fido_ray(Vec3::new(n_theta.sin(), 0.0, n_theta.cos()).normalize(), bh);
+    // chart
+    //     .configure_axes()
+    //     .light_grid_style(BLACK.mix(0.15))
+    //     .max_light_lines(3)
+    //     .draw()
+    //     .unwrap();
 
-        let mut data: Vec<(f64, f64, f64)> = vec![];
-        for i in 0..10_000 {
-            dbg!(&ray);
-            ray.euler_step(0.001);
+    // for i in 0..10 {
+    //     let n_theta = PI * (i as f32) / 5.0;
 
-            if ray.r.is_nan()
-                || ray.theta.is_nan()
-                || ray.phi.is_nan()
-                || ray.p_r.is_nan()
-                || ray.p_theta.is_nan()
-            {
-                break;
-            }
+    //     let mut ray =
+    //         observer.fido_ray(Vec3::new(n_theta.sin(), 0.0, n_theta.cos()).normalize(), bh);
 
-            let x = (ray.r * ray.r + ray.bh.a * ray.bh.a).sqrt() * ray.theta.sin() * ray.phi.cos();
-            let y = (ray.r * ray.r + ray.bh.a * ray.bh.a).sqrt() * ray.theta.sin() * ray.phi.sin();
-            let z = ray.r * ray.theta.cos();
-            data.push((x as f64, y as f64, z as f64));
-        }
+    //     let mut data: Vec<(f64, f64, f64)> = vec![];
+    //     for i in 0..10_000 {
+    //         dbg!(&ray);
+    //         ray.euler_step(0.001);
 
-        chart
-            .draw_series(LineSeries::new(
-                data.iter().map(|e| (e.0 as f64, e.1 as f64, e.2 as f64)),
-                &BLACK,
-            ))
-            .unwrap();
-    }
+    //         if ray.r.is_nan()
+    //             || ray.theta.is_nan()
+    //             || ray.phi.is_nan()
+    //             || ray.p_r.is_nan()
+    //             || ray.p_theta.is_nan()
+    //         {
+    //             break;
+    //         }
 
-    // To avoid the IO failure being ignored silently, we manually call the present function
-    area.present().expect("Unable to write result to file, please make sure 'plotters-doc-data' dir exists under current dir");
-    println!("Result has been saved to {}", OUT_FILE_NAME);
+    //         let x = (ray.r * ray.r + ray.bh.a * ray.bh.a).sqrt() * ray.theta.sin() * ray.phi.cos();
+    //         let y = (ray.r * ray.r + ray.bh.a * ray.bh.a).sqrt() * ray.theta.sin() * ray.phi.sin();
+    //         let z = ray.r * ray.theta.cos();
+    //         data.push((x as f64, y as f64, z as f64));
+    //     }
+
+    //     chart
+    //         .draw_series(LineSeries::new(
+    //             data.iter().map(|e| (e.0 as f64, e.1 as f64, e.2 as f64)),
+    //             &BLACK,
+    //         ))
+    //         .unwrap();
+    // }
+
+    // // To avoid the IO failure being ignored silently, we manually call the present function
+    // area.present().expect("Unable to write result to file, please make sure 'plotters-doc-data' dir exists under current dir");
+    // println!("Result has been saved to {}", OUT_FILE_NAME);
 }
