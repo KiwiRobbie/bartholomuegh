@@ -40,9 +40,9 @@ pub enum IntegrationMethod {
 
 #[derive(Component, Clone, ExtractComponent)]
 pub struct MainPassSettings {
-    pub show_ray_steps: bool,
-    pub indirect_lighting: bool,
-    pub shadows: bool,
+    pub surface_bool: bool,
+    pub disk_bool: bool,
+    pub disk_hide: bool,
     pub misc_bool: bool,
     pub step_count: i32,
     pub rel_error: f32,
@@ -57,9 +57,9 @@ pub struct MainPassSettings {
 impl Default for MainPassSettings {
     fn default() -> Self {
         Self {
-            show_ray_steps: false,
-            indirect_lighting: false,
-            shadows: true,
+            surface_bool: false,
+            disk_bool: false,
+            disk_hide: false,
             misc_bool: false,
             step_count: 128,
             rel_error: 1.0E-5,
@@ -78,9 +78,8 @@ pub struct TraceUniforms {
     pub camera: Mat4,
     pub camera_inverse: Mat4,
     pub time: f32,
-    pub show_ray_steps: u32,
-    pub indirect_lighting: u32,
-    pub shadows: u32,
+    pub surface_bool: u32,
+    pub disk_mode: u32,
     pub misc_bool: u32,
     pub step_count: i32,
     pub rel_error: f32,
@@ -117,9 +116,9 @@ fn prepare_uniforms(
             camera,
             camera_inverse,
             time: elapsed as f32,
-            show_ray_steps: settings.show_ray_steps as u32,
-            indirect_lighting: settings.indirect_lighting as u32,
-            shadows: settings.shadows as u32,
+            surface_bool: settings.surface_bool as u32,
+            disk_mode: (!settings.disk_hide) as u32
+                + (!settings.disk_hide && settings.disk_bool) as u32,
             misc_bool: settings.misc_bool as u32,
             step_count: settings.step_count,
             rel_error: settings.rel_error,

@@ -89,9 +89,13 @@ fn ui_system(
                                         );
                                     });
                             });
-                        CollapsingHeader::new("Disk")
+                        CollapsingHeader::new("Blackhole")
                             .default_open(true)
                             .show(ui, |ui| {
+                                ui.checkbox(&mut trace_settings.surface_bool, "Debug Surface");
+                                ui.checkbox(&mut trace_settings.disk_bool, "Debug Disk");
+                                ui.checkbox(&mut trace_settings.disk_hide, "Hide Disk");
+
                                 ui.add(
                                     Slider::new(&mut trace_settings.disk_start, 1.0..=100.0)
                                         .text("Inner Radius")
@@ -107,12 +111,6 @@ fn ui_system(
                         CollapsingHeader::new("Misc")
                             .default_open(true)
                             .show(ui, |ui| {
-                                ui.checkbox(&mut trace_settings.show_ray_steps, "Show ray steps");
-                                ui.checkbox(
-                                    &mut trace_settings.indirect_lighting,
-                                    "Indirect lighting",
-                                );
-                                ui.checkbox(&mut trace_settings.shadows, "Shadows");
                                 ui.checkbox(&mut trace_settings.misc_bool, "Misc");
 
                                 if let Some(bloom_settings) = bloom_settings {

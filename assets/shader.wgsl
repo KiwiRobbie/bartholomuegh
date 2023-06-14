@@ -4,9 +4,8 @@ struct MainPassUniforms {
     camera: mat4x4<f32>,
     camera_inverse: mat4x4<f32>,
     time: f32,
-    show_ray_steps: u32,
-    indirect_lighting: u32,
-    shadows: u32,
+    surface_bool: u32,
+    disk_mode: u32, 
     misc_bool: u32,
     step_count: i32,
     initial_step: f32,
@@ -26,22 +25,6 @@ struct Ray {
     dir: vec3<f32>,
 };
 
-// returns the closest intersection and the furthest intersection
-fn ray_box_dist(r: Ray, vmin: vec3<f32>, vmax: vec3<f32>) -> vec2<f32> {
-    let v1 = (vmin.x - r.pos.x) / r.dir.x;
-    let v2 = (vmax.x - r.pos.x) / r.dir.x;
-    let v3 = (vmin.y - r.pos.y) / r.dir.y;
-    let v4 = (vmax.y - r.pos.y) / r.dir.y;
-    let v5 = (vmin.z - r.pos.z) / r.dir.z;
-    let v6 = (vmax.z - r.pos.z) / r.dir.z;
-    let v7 = max(max(min(v1, v2), min(v3, v4)), min(v5, v6));
-    let v8 = min(min(max(v1, v2), max(v3, v4)), max(v5, v6));
-    if v8 < 0.0 || v7 > v8 {
-        return vec2(0.0);
-    }
-
-    return vec2(v7, v8);
-}
 
 fn get_camera(clip_space: vec2<f32>) -> Ray {
     let pos = uniforms.camera_inverse * vec4(clip_space.x, clip_space.y, 1.0, 1.0);
@@ -55,7 +38,7 @@ fn get_camera(clip_space: vec2<f32>) -> Ray {
 #import "blackbody.wgsl"
 
 fn fbm(v: vec3<f32>) -> f32 {
-    return (0.5 * noise(1.0 * v) + 0.25 * noise(2.0 * v) + 0.125 * noise(4.0 * v));
+    return (0.5 * noise(1.0 * v) + 0.25 * noise(2.0 * v) + 0.125 * noise(4.0 * v) + 0.0625 * noise(8.0 * v));
 }
 
 fn skybox(dir: vec3<f32>) -> vec3<f32> {
@@ -75,25 +58,38 @@ fn checker(dir: vec3<f32>, frequency: f32) -> f32 {
 }
 
 fn surface(point: vec3<f32>) -> vec3<f32> {
+    if uniforms.surface_bool == 1u {
+        return vec3(fbm(10.0 * point)) * mix(vec3(0.8, 0.8, 0.8), vec3(0.2, 0.2, 0.8), checker(point, 1.0));
+    } else {
+        return vec3(0.0);
+    }
+}
 
-    return vec3(0.0);
-    // return vec3(fbm(5.0 * point));
-    // return vec3(0.0);
-    // return vec3(fbm(10.0 * point)) * mix(vec3(0.8, 0.2, 0.2), vec3(0.2, 0.2, 0.8), checker(point, 1.0));
+
+fn disk_sample(point: vec3<f32>, t_offset: f32) -> vec3<f32> {
+    let fract_t = fract(-uniforms.time * 0.05 + t_offset);
+    let radius = dot(point, point);
+    let cos_t = cos(1000.0 * fract_t / radius);
+    let sin_t = sin(1000.0 * fract_t / radius);
+    let rotation = mat3x3(cos_t, 0.0, - sin_t, 0.0, 0.0, 0.0, sin_t, 0.0, cos_t);
+    let p = point * rotation ;
+
+
+    let r = length(point) * 1.0 + 0.02 * radius * fbm(vec3(p + vec3(0.0, uniforms.time + fract_t / radius, 0.0)));
+    let color = pow(1.0 - 1.0 / r, 2.0) * BlackBodyRadiation(1.0e4 * pow(sqrt(radius), -0.75)) / 255.0;
+    let density = 10.0 * pow(fbm(vec3(r) + uniforms.time * 0.01 + 1000.0 * t_offset), 1.25) * fbm(p);
+    return color.rgb * color.a * density * (1.0 - abs(1.0 - 2.0 * fract_t));
 }
 
 fn disk(point: vec3<f32>) -> vec3<f32> {
-    let r = length(point) * 1.0;
-    // let t = (radius - uniforms.disk_start) / (uniforms.disk_end - uniforms.disk_start);
+    if uniforms.disk_mode == 1u {
+        return disk_sample(point, 0.0) + disk_sample(point, 1.0 / 3.0) + disk_sample(point, 2.0 / 3.0);
+    } else if uniforms.disk_mode == 2u {
 
-
-    let color = pow(1.0 - 1.0 / r, 2.0) * BlackBodyRadiation(1.0e4 * pow(r, -0.75)) / 255.0;
-
-    // let color = BlackBodyRadiation(10000.0 / r);
-
-    let density = 10.0 * pow(fbm(vec3(r)), 1.25);
-    return color.rgb * color.a * density; 
-    // return vec3(fbm(1.0 * point)) * mix(vec3(0.8, 0.2, 0.2), vec3(0.2, 0.2, 0.8), checker(point, 1.0));
+        return vec3(0.75) * mix(vec3(0.8, 0.2, 0.2), vec3(0.2, 0.2, 0.2), checker(point, 1.0));
+    } else {
+        return vec3(0.0);
+    }
 }
 
 fn integrand(ray: Ray, h2: f32) -> Ray {
