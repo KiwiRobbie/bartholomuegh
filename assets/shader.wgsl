@@ -8,8 +8,10 @@ struct MainPassUniforms {
     indirect_lighting: u32,
     shadows: u32,
     misc_bool: u32,
-    step_size: f32,
     step_count: i32,
+    initial_step: f32,
+    abs_error: f32,
+    rel_error: f32,
 };
 
 @group(0) @binding(0)
@@ -91,10 +93,53 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
     let h_vec = cross(ray.pos, ray.dir);
     let h2 = dot(h_vec, h_vec);
 
+
+
+
+    var h = uniforms.initial_step;
+    let rel_tol = uniforms.rel_error;
+    let abs_tol = uniforms.abs_error;
+    let max_step = 1.0;
+
     var hit = false;
     for (var i = 0; i < uniforms.step_count; i += 1) {
-        ray = rk4_step(ray, uniforms.step_size, h2);
+        let k1 = integrand(ray, h2);
 
+        let ray_coarse = Ray(
+            ray.pos + k1.pos * h,
+            ray.dir + k1.dir * h,
+        );
+        let ray_mid = Ray(
+            ray.pos + k1.pos * h * 0.5,
+            ray.dir + k1.dir * h * 0.5,
+        );
+        let k2 = integrand(ray_mid, h2);
+
+        let ray_fine = Ray(
+            ray_mid.pos + k2.pos * h * 0.5,
+            ray_mid.dir + k2.dir * h * 0.5,
+        );
+
+
+        // let ray_coarse = rk4_step(ray, 2.0 * h, h2);
+        // let ray_fine = rk4_step(
+        //     rk4_step(ray, h, h2),
+        //     h,
+        //     h2
+        // );
+        // ray = ray_coarse;
+        // ray = ray_fine;
+
+        let error_ray = Ray(
+            ray_coarse.pos - ray_fine.pos,
+            ray_coarse.dir - ray_fine.dir
+        );
+        let error = sqrt(dot(error_ray.pos, error_ray.pos) + dot(error_ray.dir, error_ray.dir));
+
+        let y = sqrt(dot(ray.pos, ray.pos) + dot(ray.dir, ray.dir));
+        h = min(h * clamp(sqrt(max(abs_tol, abs(y) * rel_tol) / abs(error)), 0.3, 2.0), max_step);
+
+        ray = ray_fine;
         if dot(ray.pos, ray.pos) < 1.0 {
             hit = true; 
             break;
