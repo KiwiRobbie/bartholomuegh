@@ -11,7 +11,7 @@ use bevy::{
     },
     ui::UiPassNode,
 };
-pub use main_pass::MainPassSettings;
+pub use main_pass::{IntegrationMethod, MainPassSettings};
 
 mod main_pass;
 

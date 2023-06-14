@@ -32,6 +32,12 @@ struct MainPassPipelineData {
     bind_group_layout: BindGroupLayout,
 }
 
+#[derive(Clone, Copy, PartialEq)]
+pub enum IntegrationMethod {
+    Rk4,
+    Euler,
+}
+
 #[derive(Component, Clone, ExtractComponent)]
 pub struct MainPassSettings {
     pub show_ray_steps: bool,
@@ -43,6 +49,7 @@ pub struct MainPassSettings {
     pub abs_error: f32,
     pub initial_step: f32,
     pub max_step: f32,
+    pub method: IntegrationMethod,
     pub disk_start: f32,
     pub disk_end: f32,
 }
@@ -57,8 +64,9 @@ impl Default for MainPassSettings {
             step_count: 128,
             rel_error: 1.0E-5,
             abs_error: 1.0E-5,
-            initial_step: 0.01,
-            max_step: 1.0,
+            initial_step: 0.00050,
+            max_step: 0.5,
+            method: IntegrationMethod::Rk4,
             disk_start: 1.0,
             disk_end: 10.0,
         }
@@ -79,6 +87,7 @@ pub struct TraceUniforms {
     pub abs_error: f32,
     pub initial_step: f32,
     pub max_step: f32,
+    pub method: u32,
     pub disk_start: f32,
     pub disk_end: f32,
 }
@@ -117,6 +126,10 @@ fn prepare_uniforms(
             abs_error: settings.abs_error,
             initial_step: settings.initial_step,
             max_step: settings.max_step,
+            method: match settings.method {
+                IntegrationMethod::Rk4 => 0,
+                IntegrationMethod::Euler => 1,
+            },
             disk_start: settings.disk_start,
             disk_end: settings.disk_end,
         };

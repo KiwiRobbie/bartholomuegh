@@ -1,3 +1,4 @@
+use crate::render_pipeline::IntegrationMethod;
 use crate::render_pipeline::MainPassSettings;
 use bevy::{
     core_pipeline::{bloom::BloomSettings, fxaa::Fxaa, tonemapping::Tonemapping},
@@ -7,7 +8,7 @@ use bevy::{
 };
 use bevy_inspector_egui::{
     bevy_egui::{EguiContexts, EguiPlugin},
-    egui::{self, CollapsingHeader, Color32, DragValue, RichText, Slider},
+    egui::{self, CollapsingHeader, Color32, ComboBox, DragValue, RichText, Slider},
     reflect_inspector::ui_for_value,
 };
 
@@ -51,12 +52,12 @@ fn ui_system(
                                         .logarithmic(true),
                                 );
                                 ui.add(
-                                    Slider::new(&mut trace_settings.rel_error, 0.0001..=0.1)
+                                    Slider::new(&mut trace_settings.rel_error, 0.000001..=0.1)
                                         .text("Relative Error Tolerance")
                                         .logarithmic(true),
                                 );
                                 ui.add(
-                                    Slider::new(&mut trace_settings.abs_error, 0.0001..=0.1)
+                                    Slider::new(&mut trace_settings.abs_error, 0.000001..=0.1)
                                         .text("Absolute Error Tolerance")
                                         .logarithmic(true),
                                 );
@@ -66,10 +67,27 @@ fn ui_system(
                                         .logarithmic(true),
                                 );
                                 ui.add(
-                                    Slider::new(&mut trace_settings.max_step, 0.0001..=0.1)
+                                    Slider::new(&mut trace_settings.max_step, 0.0001..=1.0)
                                         .text("Max Step")
                                         .logarithmic(true),
                                 );
+                                ComboBox::from_label("Integration Method")
+                                    .selected_text(match trace_settings.method {
+                                        IntegrationMethod::Rk4 => "RK4",
+                                        IntegrationMethod::Euler => "Euler",
+                                    })
+                                    .show_ui(ui, |ui| {
+                                        ui.selectable_value(
+                                            &mut trace_settings.method,
+                                            IntegrationMethod::Euler,
+                                            "Euler",
+                                        );
+                                        ui.selectable_value(
+                                            &mut trace_settings.method,
+                                            IntegrationMethod::Rk4,
+                                            "RK4",
+                                        );
+                                    });
                             });
                         CollapsingHeader::new("Disk")
                             .default_open(true)

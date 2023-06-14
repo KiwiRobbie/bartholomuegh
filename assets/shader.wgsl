@@ -13,6 +13,7 @@ struct MainPassUniforms {
     abs_error: f32,
     rel_error: f32,
     max_step: f32,
+    method: u32,
     disk_start: f32,
     disk_end: f32,
 };
@@ -74,9 +75,11 @@ fn checker(dir: vec3<f32>, frequency: f32) -> f32 {
 }
 
 fn surface(point: vec3<f32>) -> vec3<f32> {
-    // return vec3(fbm(5.0 * point));
+
     return vec3(0.0);
-    // return vec3(fbm(10.0 * point)) * mix(vec3(0.8, 0.2, 0.2), vec3(0.2, 0.2, 0.8), checker(point, 5.0));
+    // return vec3(fbm(5.0 * point));
+    // return vec3(0.0);
+    // return vec3(fbm(10.0 * point)) * mix(vec3(0.8, 0.2, 0.2), vec3(0.2, 0.2, 0.8), checker(point, 1.0));
 }
 
 fn disk(point: vec3<f32>) -> vec3<f32> {
@@ -110,6 +113,7 @@ fn rk4_step(ray: Ray, h: f32, h2: f32) -> Ray {
     );
 }
 
+
 @fragment
 fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
     let clip_space = vec2(1.0, -1.0) * (in.uv * 2.0 - 1.0);
@@ -133,90 +137,72 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
     let disk_start = uniforms.disk_start;
     let disk_end = uniforms.disk_end;
 
-    var disk_hits = 0.0;
-
     var color = vec3(0.0);
 
 
     for (var i = 0; i < uniforms.step_count; i += 1) {
-        let k1 = integrand(ray, h2);
+        // Integrate using selected method
+        var ray_coarse = Ray();
+        var ray_fine = Ray();
+        if uniforms.method == 0u {
+            ray_coarse = rk4_step(ray, 2.0 * h, h2);
+            let ray_mid = rk4_step(ray, h, h2);
+            ray_fine = rk4_step(ray_mid, h, h2);
+        } else {
+            let k1 = integrand(ray, h2);
+            ray_coarse = Ray(
+                ray.pos + k1.pos * h,
+                ray.dir + k1.dir * h,
+            );
+            let ray_mid = Ray(
+                ray.pos + k1.pos * h * 0.5,
+                ray.dir + k1.dir * h * 0.5,
+            );
+            let k2 = integrand(ray_mid, h2);
+            ray_fine = Ray(
+                ray_mid.pos + k2.pos * h * 0.5,
+                ray_mid.dir + k2.dir * h * 0.5,
+            );
+        }
 
-        let ray_coarse = Ray(
-            ray.pos + k1.pos * h,
-            ray.dir + k1.dir * h,
-        );
-        let ray_mid = Ray(
-            ray.pos + k1.pos * h * 0.5,
-            ray.dir + k1.dir * h * 0.5,
-        );
-        let k2 = integrand(ray_mid, h2);
-
-        let ray_fine = Ray(
-            ray_mid.pos + k2.pos * h * 0.5,
-            ray_mid.dir + k2.dir * h * 0.5,
-        );
-
-
-        // let ray_coarse = rk4_step(ray, 2.0 * h, h2);
-        // let ray_fine = rk4_step(
-        //     rk4_step(ray, h, h2),
-        //     h,
-        //     h2
-        // );
-        // ray = ray_coarse;
-        // ray = ray_fine;
-
+        // Determine error and adapt step size
         let error_ray = Ray(
             ray_coarse.pos - ray_fine.pos,
             ray_coarse.dir - ray_fine.dir
         );
         let error = sqrt(dot(error_ray.pos, error_ray.pos) + dot(error_ray.dir, error_ray.dir));
-
         let y = sqrt(dot(ray.pos, ray.pos) + dot(ray.dir, ray.dir));
         h = min(h * clamp(sqrt(max(abs_tol, abs(y) * rel_tol) / abs(error)), 0.3, 2.0), max_step);
 
-
-        let coarse_l = dot(ray_fine.pos, ray_fine.pos);
-        let ray_l = dot(ray.pos, ray.pos);
-
+        // Check for y-plane intersection
         if (ray_fine.pos.y * ray.pos.y) <= 0.0 {
-            let total_dist = ray_fine.pos.y - ray.pos.y;
-            let t = -ray.pos.y / total_dist;
-
+            // Approximate hit location
+            let t = -ray.pos.y / (ray_fine.pos.y - ray.pos.y);
             let hit_ray = Ray(
                 mix(ray.pos, ray_fine.pos, t) * vec3(1.0, 0.0, 1.0),
                 mix(ray.dir, ray_fine.dir, t)
             );
 
+            // Check for disk intersection
             let hit_distance = dot(hit_ray.pos, hit_ray.pos);
-            if hit_distance < 1.0 {
-                break;
-            }
-            if hit_distance > disk_start * disk_start && hit_distance < disk_end * disk_end {
-
+            if hit_distance >= disk_start * disk_start && hit_distance < disk_end * disk_end {
                 color += disk(hit_ray.pos);
-                // color = mix(color, disk(hit_ray.pos), 1.0 / (1.0 + 100.0 * disk_hits));
-                disk_hits += 1.0;
-            }
-        } else {
-            if dot(ray_fine.pos, ray_fine.pos) < 1.0 && dot(ray.pos, ray.pos) > 1.0 {
-                let l_i = sqrt(dot(ray.pos, ray.pos));
-                let l_f = sqrt(dot(ray_fine.pos, ray_fine.pos));
-
-                let t = -l_i / (l_f - l_i);
-                ray = Ray(
-                    mix(ray.pos, ray_fine.pos, t),
-                    mix(ray.dir, ray_fine.dir, t)
-                );
-                hit = 1.0; 
-            break;
             }
         }
 
+        // If light ray passes below horizon
+        if dot(ray_fine.pos, ray_fine.pos) <= 1.0 && dot(ray.pos, ray.pos) >= 1.0 {
+            let l_i = sqrt(dot(ray.pos, ray.pos));
+            let l_f = sqrt(dot(ray_fine.pos, ray_fine.pos));
 
-
-
-
+            let t = - (l_i - 1.0) / (l_f - l_i);
+            ray = Ray(
+                mix(ray.pos, ray_fine.pos, t),
+                mix(ray.dir, ray_fine.dir, t)
+            );
+            hit = 1.0; 
+            break;
+        }
 
         ray = ray_fine;
     }
@@ -227,13 +213,8 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
     let r_hat = normalize(r);
     let v_hat = normalize(v);
 
-    let radius = length(r);
-    let early = max(0.0, (radius - 1.0) * (3.0 - radius));
 
-    let warning_color = vec3(2.0, 0.5, 2.0);
     output_colour = max(mix(skybox(v_hat), surface(r_hat), hit), vec3(0.0));
-    // output_colour = mix(output_colour, warning_color, early);
     output_colour += color;
-    // output_colour = mix(output_colour, disk(r), disk_hit);
     return vec4<f32>(output_colour, 1.0);
 }
