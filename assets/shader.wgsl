@@ -95,14 +95,49 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
     let h2 = dot(h_vec, h_vec);
 
 
-    let step_size = uniforms.step_size;
+    let tol = 0.01;
+    var h = uniforms.step_size;
 
     var hit = 0.0;
     var phi = 0.0;
 
     for (var i = 0; i < uniforms.step_count; i += 1) {
-        ray = rk4_step(ray, step_size, h2);
+        let k1 = integrand(ray, h2);
 
+        let ray_coarse = Ray(
+            ray.pos + k1.pos * h,
+            ray.dir + k1.dir * h,
+        );
+        let ray_mid = Ray(
+            ray.pos + k1.pos * h * 0.5,
+            ray.dir + k1.dir * h * 0.5,
+        );
+        let k2 = integrand(ray_mid, h2);
+
+        let ray_fine = Ray(
+            ray_mid.pos + k2.pos * h * 0.5,
+            ray_mid.dir + k2.dir * h * 0.5,
+        );
+
+
+        // let ray_coarse = rk4_step(ray, 2.0 * h, h2);
+        // let ray_fine = rk4_step(
+        //     rk4_step(ray, h, h2),
+        //     h,
+        //     h2
+        // );
+        // ray = ray_coarse;
+        // ray = ray_fine;
+
+        let error_ray = Ray(
+            ray_coarse.pos - ray_fine.pos,
+            ray_coarse.dir - ray_fine.dir
+        );
+        let error = sqrt(dot(error_ray.pos, error_ray.pos) + dot(error_ray.dir, error_ray.dir));
+
+        h = 0.9 * h * clamp(sqrt(0.5 / abs(tol)), 0.3, 2.0);
+
+        ray = ray_fine;
         if dot(ray.pos, ray.pos) < 1.0 {
             hit = 1.0; 
             break;
