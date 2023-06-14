@@ -1,4 +1,4 @@
-use bevy::{prelude::*, render::camera::CameraRenderGraph};
+use bevy::{core_pipeline::bloom::BloomSettings, prelude::*, render::camera::CameraRenderGraph};
 use character::CharacterEntity;
 use render_pipeline::MainPassSettings;
 
@@ -38,6 +38,7 @@ fn setup(mut commands: Commands) {
             ..default()
         },
         MainPassSettings::default(),
+        BloomSettings::default(),
         CharacterEntity {
             velocity: Vec3::ZERO,
             speed: 10.0,

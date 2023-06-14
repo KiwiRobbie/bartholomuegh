@@ -64,7 +64,7 @@ fn skybox(dir: vec3<f32>) -> vec3<f32> {
         noise(100.0 * dir) * noise(200.0 * dir) * noise(400.0 * dir),
         10.0
     );
-    return 4.0 * log(color.a) * color.rgb * max(0.0, brightness - 0.001);
+    return 2.0 * log(color.a) * color.rgb * pow(1.0 * max(0.0, brightness - 0.001), 0.7);
     // return vec3(fbm(10.0 * dir)) * mix(vec3(0.75), vec3(0.25), checker(dir, 5.0));
 }
 
@@ -88,7 +88,7 @@ fn disk(point: vec3<f32>) -> vec3<f32> {
 
     // let color = BlackBodyRadiation(10000.0 / r);
 
-    let density = fbm(vec3(r));
+    let density = 10.0 * pow(fbm(vec3(r)), 1.25);
     return color.rgb * color.a * density; 
     // return vec3(fbm(1.0 * point)) * mix(vec3(0.8, 0.2, 0.2), vec3(0.2, 0.2, 0.8), checker(point, 1.0));
 }
