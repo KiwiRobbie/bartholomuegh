@@ -63,7 +63,12 @@ fn checker(dir: vec3<f32>, frequency: f32) -> f32 {
 }
 
 fn surface(point: vec3<f32>) -> vec3<f32> {
-    return vec3(fbm(10.0 * point)) * mix(vec3(0.8, 0.2, 0.2), vec3(0.2, 0.2, 0.8), checker(point, 5.0));
+    return vec3(fbm(10.0 * point));
+    // return vec3(fbm(10.0 * point)) * mix(vec3(0.8, 0.2, 0.2), vec3(0.2, 0.2, 0.8), checker(point, 5.0));
+}
+
+fn disk(point: vec3<f32>) -> vec3<f32> {
+    return vec3(fbm(1.0 * point)) * mix(vec3(0.8, 0.2, 0.2), vec3(0.2, 0.2, 0.8), checker(point, 1.0));
 }
 
 fn integrand(ray: Ray, h2: f32) -> Ray {
@@ -102,10 +107,12 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
     var h = uniforms.initial_step;
     let rel_tol = uniforms.rel_error;
     let abs_tol = uniforms.abs_error;
-    let max_step = 1.0;
+    let max_step = 0.25;
 
     var hit = 0.0;
     var phi = 0.0;
+
+    var disk_hit = 0.0;
 
     for (var i = 0; i < uniforms.step_count; i += 1) {
         let k1 = integrand(ray, h2);
@@ -144,11 +151,25 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
         let y = sqrt(dot(ray.pos, ray.pos) + dot(ray.dir, ray.dir));
         h = min(h * clamp(sqrt(max(abs_tol, abs(y) * rel_tol) / abs(error)), 0.3, 2.0), max_step);
 
-        ray = ray_fine;
-        if dot(ray.pos, ray.pos) < 1.0 {
+        if dot(ray_fine.pos, ray_fine.pos) < 1.0 {
             hit = 1.0; 
             break;
         }
+        if (ray_fine.pos.y * ray.pos.y) <= 0.0 {
+            let total_dist = ray_fine.pos.y - ray.pos.y;
+            let t = -ray.pos.y / total_dist;
+
+            ray = Ray(
+                mix(ray.pos, ray_fine.pos, t),
+                mix(ray.dir, ray_fine.dir, t)
+            );
+            ray.pos.y = 0.0;
+
+            disk_hit = 1.0;
+            break;
+        }
+
+        ray = ray_fine;
     }
     let r = ray.pos;
     let v = ray.dir;
@@ -162,5 +183,6 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
     let warning_color = vec3(2.0, 0.5, 2.0);
     let hit_color = max(mix(skybox(v_hat), surface(r_hat), hit), vec3(0.0));
     output_colour = mix(hit_color, warning_color, early);
+    output_colour = mix(output_colour, disk(r), disk_hit);
     return vec4<f32>(output_colour, 1.0);
 }
