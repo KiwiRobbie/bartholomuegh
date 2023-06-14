@@ -42,17 +42,12 @@ fn ui_system(
                 CollapsingHeader::new(format!("Camera Settings {}", i))
                     .default_open(true)
                     .show(ui, |ui| {
-                        CollapsingHeader::new("Intergration")
+                        CollapsingHeader::new("Integration")
                             .default_open(true)
                             .show(ui, |ui| {
                                 ui.add(
                                     Slider::new(&mut trace_settings.step_count, 1..=10000)
                                         .text("Step Count")
-                                        .logarithmic(true),
-                                );
-                                ui.add(
-                                    Slider::new(&mut trace_settings.initial_step, 0.0001..=0.1)
-                                        .text("Initial Step")
                                         .logarithmic(true),
                                 );
                                 ui.add(
@@ -63,6 +58,30 @@ fn ui_system(
                                 ui.add(
                                     Slider::new(&mut trace_settings.abs_error, 0.0001..=0.1)
                                         .text("Absolute Error Tolerance")
+                                        .logarithmic(true),
+                                );
+                                ui.add(
+                                    Slider::new(&mut trace_settings.initial_step, 0.0001..=0.1)
+                                        .text("Initial Step")
+                                        .logarithmic(true),
+                                );
+                                ui.add(
+                                    Slider::new(&mut trace_settings.max_step, 0.0001..=0.1)
+                                        .text("Max Step")
+                                        .logarithmic(true),
+                                );
+                            });
+                        CollapsingHeader::new("Disk")
+                            .default_open(true)
+                            .show(ui, |ui| {
+                                ui.add(
+                                    Slider::new(&mut trace_settings.disk_start, 1.0..=100.0)
+                                        .text("Inner Radius")
+                                        .logarithmic(true),
+                                );
+                                ui.add(
+                                    Slider::new(&mut trace_settings.disk_end, 1.0..=100.0)
+                                        .text("Outer Radius")
                                         .logarithmic(true),
                                 );
                             });

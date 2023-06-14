@@ -42,6 +42,9 @@ pub struct MainPassSettings {
     pub rel_error: f32,
     pub abs_error: f32,
     pub initial_step: f32,
+    pub max_step: f32,
+    pub disk_start: f32,
+    pub disk_end: f32,
 }
 
 impl Default for MainPassSettings {
@@ -55,6 +58,9 @@ impl Default for MainPassSettings {
             rel_error: 1.0E-5,
             abs_error: 1.0E-5,
             initial_step: 0.01,
+            max_step: 1.0,
+            disk_start: 2.0,
+            disk_end: 10.0,
         }
     }
 }
@@ -72,6 +78,9 @@ pub struct TraceUniforms {
     pub rel_error: f32,
     pub abs_error: f32,
     pub initial_step: f32,
+    pub max_step: f32,
+    pub disk_start: f32,
+    pub disk_end: f32,
 }
 
 #[derive(Component, Deref, DerefMut)]
@@ -107,6 +116,9 @@ fn prepare_uniforms(
             rel_error: settings.rel_error,
             abs_error: settings.abs_error,
             initial_step: settings.initial_step,
+            max_step: settings.max_step,
+            disk_start: settings.disk_start,
+            disk_end: settings.disk_end,
         };
 
         let mut uniform_buffer = UniformBuffer::from(uniforms);

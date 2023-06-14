@@ -12,6 +12,9 @@ struct MainPassUniforms {
     initial_step: f32,
     abs_error: f32,
     rel_error: f32,
+    max_step: f32,
+    disk_start: f32,
+    disk_end: f32,
 };
 
 @group(0) @binding(0)
@@ -101,14 +104,15 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
     var h = uniforms.initial_step;
     let rel_tol = uniforms.rel_error;
     let abs_tol = uniforms.abs_error;
-    let max_step = 0.25;
+    let max_step = uniforms.max_step;
+
 
     var hit = 0.0;
     var phi = 0.0;
 
 
-    let disk_start = 2.0;
-    let disk_end = 10.0;
+    let disk_start = uniforms.disk_start;
+    let disk_end = uniforms.disk_end;
 
     var disk_hit = 0.0;
 
