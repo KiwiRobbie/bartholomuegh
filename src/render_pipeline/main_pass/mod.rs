@@ -54,12 +54,12 @@ impl Default for MainPassSettings {
             indirect_lighting: false,
             shadows: true,
             misc_bool: false,
-            step_count: 100,
+            step_count: 128,
             rel_error: 1.0E-5,
             abs_error: 1.0E-5,
             initial_step: 0.01,
             max_step: 1.0,
-            disk_start: 2.0,
+            disk_start: 1.0,
             disk_end: 10.0,
         }
     }

@@ -29,7 +29,7 @@
     
     // returns: float4 ChromaRadiance = {chroma_r, chroma_g, chroma_b, effRadiance}
 
-fn BlackBodyRadiation(T: f32, bComputeRadiance: bool, bComputeChromaticity: bool) -> vec4<f32> {
+fn BlackBodyRadiation(T: f32) -> vec4<f32> {
     if T <= 0.0 {
         return vec4(0.0);
     }
@@ -37,30 +37,26 @@ fn BlackBodyRadiation(T: f32, bComputeRadiance: bool, bComputeChromaticity: bool
     var chroma_radiance = vec4(0.0, 0.0, 0.0, 0.0);
     
     // --- Effective radiance in W/(sr*m2) ---
-    if bComputeRadiance {
-        chroma_radiance.a = 230141698.067 / (exp(25724.2 / T) - 1.0);
-    }    
+    chroma_radiance.a = 230141698.067 / (exp(25724.2 / T) - 1.0);
     // luminance Lv = Km*ChromaRadiance.a in cd/m2, where Km = 683.002 lm/W
     
     // --- Chromaticity in linear sRGB ---
     // (i.e. color luminance Y = dot({r,g,b}, {0.2126, 0.7152, 0.0722}) = 1)
-    if bComputeChromaticity {
-            {
-            let u = 0.000536332 * T;
-            chroma_radiance.r = 0.638749 + (u + 1.57533) / (u * u + 0.28664);
-        }
+        {
+        let u = 0.000536332 * T;
+        chroma_radiance.r = 0.638749 + (u + 1.57533) / (u * u + 0.28664);
+    }
 
-            {
-            let u = 0.0019639 * T;
-            chroma_radiance.g = 0.971029 + (u - 10.8015) / (u * u + 6.59002);
-        }
+        {
+        let u = 0.0019639 * T;
+        chroma_radiance.g = 0.971029 + (u - 10.8015) / (u * u + 6.59002);
+    }
 
-            {
-            let p = 0.00668406 * T + 23.3962;
-            let u = 0.000941064 * T;
-            let q = u * u + 0.00100641 * T + 10.9068;
-            chroma_radiance.b = 2.25398 - p / q;
-        }
+        {
+        let p = 0.00668406 * T + 23.3962;
+        let u = 0.000941064 * T;
+        let q = u * u + 0.00100641 * T + 10.9068;
+        chroma_radiance.b = 2.25398 - p / q;
     }
 
     return chroma_radiance;
