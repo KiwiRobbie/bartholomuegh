@@ -63,7 +63,8 @@ fn checker(dir: vec3<f32>, frequency: f32) -> f32 {
 }
 
 fn surface(point: vec3<f32>) -> vec3<f32> {
-    return vec3(fbm(10.0 * point)) * mix(vec3(0.8, 0.2, 0.2), vec3(0.2, 0.2, 0.8), checker(point, 5.0));
+    // return vec3(fbm(10.0 * point)) * mix(vec3(0.8, 0.2, 0.2), vec3(0.2, 0.2, 0.8), checker(point, 5.0));
+    return vec3(0.0);
 }
 
 fn integrand(ray: Ray, h2: f32) -> Ray {
@@ -92,9 +93,6 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
 
     let h_vec = cross(ray.pos, ray.dir);
     let h2 = dot(h_vec, h_vec);
-
-
-
 
     var h = uniforms.initial_step;
     let rel_tol = uniforms.rel_error;
@@ -140,7 +138,7 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
         h = min(h * clamp(sqrt(max(abs_tol, abs(y) * rel_tol) / abs(error)), 0.3, 2.0), max_step);
 
         ray = ray_fine;
-        if dot(ray.pos, ray.pos) < 1.0 {
+        if dot(ray.pos, ray.pos) < 1.0 && dot(ray.dir, ray.pos) < 0.0 {
             hit = true; 
             break;
         }
