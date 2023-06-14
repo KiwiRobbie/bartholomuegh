@@ -147,11 +147,17 @@ fn ui_system(
                             .default_open(true)
                             .show(ui, |ui| {
                                 ui.horizontal(|ui| {
-                                    ui.label(RichText::new("X: ").color(Color32::RED));
+                                    ui.label(
+                                        RichText::new("X: ").color(Color32::from_rgb(204, 25, 38)),
+                                    );
                                     ui.add(DragValue::new(&mut transform.translation.x).speed(0.1));
-                                    ui.label(RichText::new("Y: ").color(Color32::GREEN));
+                                    ui.label(
+                                        RichText::new("Y: ").color(Color32::from_rgb(51, 178, 51)),
+                                    );
                                     ui.add(DragValue::new(&mut transform.translation.y).speed(0.1));
-                                    ui.label(RichText::new("Z: ").color(Color32::BLUE));
+                                    ui.label(
+                                        RichText::new("Z: ").color(Color32::from_rgb(25, 63, 204)),
+                                    );
                                     ui.add(DragValue::new(&mut transform.translation.z).speed(0.1));
                                 });
                             });
