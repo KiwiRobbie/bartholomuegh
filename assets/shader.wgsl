@@ -95,14 +95,8 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
 
     var ray = get_camera(clip_space);
 
-
-
-
     let h_vec = cross(ray.pos, ray.dir);
     let h2 = dot(h_vec, h_vec);
-
-
-
 
     var h = uniforms.initial_step;
     let rel_tol = uniforms.rel_error;
@@ -151,8 +145,9 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
         let y = sqrt(dot(ray.pos, ray.pos) + dot(ray.dir, ray.dir));
         h = min(h * clamp(sqrt(max(abs_tol, abs(y) * rel_tol) / abs(error)), 0.3, 2.0), max_step);
 
-        if dot(ray_fine.pos, ray_fine.pos) < 1.0 {
-            hit = 1.0; 
+        ray = ray_fine;
+        if dot(ray.pos, ray.pos) < 1.0 && dot(ray.dir, ray.pos) < 0.0 {
+            hit = true; 
             break;
         }
         if (ray_fine.pos.y * ray.pos.y) <= 0.0 {
@@ -171,6 +166,7 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
 
         ray = ray_fine;
     }
+
     let r = ray.pos;
     let v = ray.dir;
 
@@ -181,7 +177,7 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
     let early = max(0.0, (radius - 1.0) * (3.0 - radius));
 
     let warning_color = vec3(2.0, 0.5, 2.0);
-    let hit_color = max(mix(skybox(v_hat), surface(r_hat), hit), vec3(0.0));
+    let hit_color = max(mix(skybox(v_hat), surface(r_hat), f32(hit)), vec3(0.0));
     output_colour = mix(hit_color, warning_color, early);
     output_colour = mix(output_colour, disk(r), disk_hit);
     return vec4<f32>(output_colour, 1.0);

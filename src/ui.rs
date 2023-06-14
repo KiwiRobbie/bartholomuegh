@@ -1,14 +1,13 @@
 use crate::render_pipeline::MainPassSettings;
-use bevy::prelude::*;
-
 use bevy::{
     core_pipeline::{bloom::BloomSettings, fxaa::Fxaa, tonemapping::Tonemapping},
+    prelude::*,
     reflect::TypeRegistryInternal,
     window::PrimaryWindow,
 };
 use bevy_inspector_egui::{
     bevy_egui::{EguiContexts, EguiPlugin},
-    egui::{self, DragValue, Grid, Slider},
+    egui::{self, CollapsingHeader, Color32, DragValue, RichText, Slider},
     reflect_inspector::ui_for_value,
 };
 
@@ -24,11 +23,11 @@ fn ui_system(
     mut contexts: EguiContexts,
     mut camera_settings_query: Query<(
         &mut MainPassSettings,
+        &mut Transform,
         Option<&mut BloomSettings>,
         Option<&mut Tonemapping>,
         Option<&mut Fxaa>,
         Option<&mut Projection>,
-        Option<&mut Transform>,
     )>,
     window: Query<Entity, With<PrimaryWindow>>,
 ) {
@@ -37,88 +36,107 @@ fn ui_system(
         .show(contexts.ctx_for_window_mut(window.single()), |ui| {
             for (
                 i,
-                (mut trace_settings, bloom_settings, tonemapping, fxaa, projection, transform),
+                (mut trace_settings, mut transform, bloom_settings, tonemapping, fxaa, projection),
             ) in camera_settings_query.iter_mut().enumerate()
             {
-                ui.collapsing(format!("Camera Settings {}", i), |ui| {
-                    ui.heading("Integration");
-                    ui.add(
-                        Slider::new(&mut trace_settings.step_count, 1..=10000)
-                            .text("Step Count")
-                            .logarithmic(true),
-                    );
-                    ui.add(
-                        Slider::new(&mut trace_settings.initial_step, 0.0001..=0.1)
-                            .text("Initial Step")
-                            .logarithmic(true),
-                    );
-                    ui.add(
-                        Slider::new(&mut trace_settings.rel_error, 0.0001..=0.1)
-                            .text("Relative Error Tolerance")
-                            .logarithmic(true),
-                    );
-                    ui.add(
-                        Slider::new(&mut trace_settings.abs_error, 0.0001..=0.1)
-                            .text("Absolute Error Tolerance")
-                            .logarithmic(true),
-                    );
-                    ui.heading("Misc");
-
-                    ui.checkbox(&mut trace_settings.show_ray_steps, "Show ray steps");
-                    ui.checkbox(&mut trace_settings.indirect_lighting, "Indirect lighting");
-                    ui.checkbox(&mut trace_settings.shadows, "Shadows");
-                    ui.checkbox(&mut trace_settings.misc_bool, "Misc");
-
-                    if let Some(bloom_settings) = bloom_settings {
-                        ui.add(
-                            Slider::new(&mut bloom_settings.into_inner().intensity, 0.0..=1.0)
-                                .text("Bloom"),
-                        );
-                    }
-
-                    let registry = &TypeRegistryInternal::default();
-                    if let Some(tonemapping) = tonemapping {
-                        ui_for_value(tonemapping.into_inner(), ui, registry);
-                    }
-                    // if let Some(bloom_settings) = bloom_settings {
-                    //     ui_for_value(bloom_settings.into_inner(), ui, registry);
-                    // }
-                    if let Some(fxaa) = fxaa {
-                        ui_for_value(fxaa.into_inner(), ui, registry);
-                    }
-
-                    if let Some(projection) = projection {
-                        match projection.into_inner() {
-                            Projection::Orthographic(orthographic_projection) => {
+                CollapsingHeader::new(format!("Camera Settings {}", i))
+                    .default_open(true)
+                    .show(ui, |ui| {
+                        CollapsingHeader::new("Intergration")
+                            .default_open(true)
+                            .show(ui, |ui| {
                                 ui.add(
-                                    Slider::new(&mut orthographic_projection.scale, 0.0..=1000.0)
-                                        .text("Orthographic scale"),
+                                    Slider::new(&mut trace_settings.step_count, 1..=10000)
+                                        .text("Step Count")
+                                        .logarithmic(true),
                                 );
-                            }
-                            Projection::Perspective(perspective_projection) => {
                                 ui.add(
-                                    Slider::new(&mut perspective_projection.fov, 0.0..=3.1415)
-                                        .logarithmic(true)
-                                        .text("Perspective fov"),
+                                    Slider::new(&mut trace_settings.initial_step, 0.0001..=0.1)
+                                        .text("Initial Step")
+                                        .logarithmic(true),
                                 );
-                            }
-                        }
-                    }
-                    ui.heading("Transform");
-                    if let Some(mut transform) = transform {
-                        Grid::new("Position").show(ui, |ui| {
-                            ui.add(DragValue::new(&mut transform.translation.x).speed(0.1));
-                            ui.add(DragValue::new(&mut transform.translation.y).speed(0.1));
-                            ui.add(DragValue::new(&mut transform.translation.z).speed(0.1));
-                        });
-                        // ui.add(Label::new(&transform.translation.x.to_string()));
-                        // ui.add(Label::new(&transform.translation.y.to_string()));
-                        // ui.add(Label::new(&transform.translation.z.to_string()));
-                    }
-                });
+                                ui.add(
+                                    Slider::new(&mut trace_settings.rel_error, 0.0001..=0.1)
+                                        .text("Relative Error Tolerance")
+                                        .logarithmic(true),
+                                );
+                                ui.add(
+                                    Slider::new(&mut trace_settings.abs_error, 0.0001..=0.1)
+                                        .text("Absolute Error Tolerance")
+                                        .logarithmic(true),
+                                );
+                            });
+
+                        CollapsingHeader::new("Misc")
+                            .default_open(true)
+                            .show(ui, |ui| {
+                                ui.checkbox(&mut trace_settings.show_ray_steps, "Show ray steps");
+                                ui.checkbox(
+                                    &mut trace_settings.indirect_lighting,
+                                    "Indirect lighting",
+                                );
+                                ui.checkbox(&mut trace_settings.shadows, "Shadows");
+                                ui.checkbox(&mut trace_settings.misc_bool, "Misc");
+
+                                if let Some(bloom_settings) = bloom_settings {
+                                    ui.add(
+                                        Slider::new(
+                                            &mut bloom_settings.into_inner().intensity,
+                                            0.0..=1.0,
+                                        )
+                                        .text("Bloom"),
+                                    );
+                                }
+
+                                let registry = &TypeRegistryInternal::default();
+                                if let Some(tonemapping) = tonemapping {
+                                    ui_for_value(tonemapping.into_inner(), ui, registry);
+                                }
+                                // if let Some(bloom_settings) = bloom_settings {
+                                //     ui_for_value(bloom_settings.into_inner(), ui, registry);
+                                // }
+                                if let Some(fxaa) = fxaa {
+                                    ui_for_value(fxaa.into_inner(), ui, registry);
+                                }
+
+                                if let Some(projection) = projection {
+                                    match projection.into_inner() {
+                                        Projection::Orthographic(orthographic_projection) => {
+                                            ui.add(
+                                                Slider::new(
+                                                    &mut orthographic_projection.scale,
+                                                    0.0..=1000.0,
+                                                )
+                                                .text("Orthographic scale"),
+                                            );
+                                        }
+                                        Projection::Perspective(perspective_projection) => {
+                                            ui.add(
+                                                Slider::new(
+                                                    &mut perspective_projection.fov,
+                                                    0.0..=3.1415,
+                                                )
+                                                .logarithmic(true)
+                                                .text("Perspective fov"),
+                                            );
+                                        }
+                                    }
+                                }
+                            });
+
+                        CollapsingHeader::new("Transform")
+                            .default_open(true)
+                            .show(ui, |ui| {
+                                ui.horizontal(|ui| {
+                                    ui.label(RichText::new("X: ").color(Color32::RED));
+                                    ui.add(DragValue::new(&mut transform.translation.x).speed(0.1));
+                                    ui.label(RichText::new("Y: ").color(Color32::GREEN));
+                                    ui.add(DragValue::new(&mut transform.translation.y).speed(0.1));
+                                    ui.label(RichText::new("Z: ").color(Color32::BLUE));
+                                    ui.add(DragValue::new(&mut transform.translation.z).speed(0.1));
+                                });
+                            });
+                    });
             }
-
-            // let test = character.single();
-            // if let CharacterEntity(character) = character.single() {}
         });
 }
