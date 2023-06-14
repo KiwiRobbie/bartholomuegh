@@ -65,10 +65,10 @@ impl Default for MainPassSettings {
             rel_error: 1.0E-5,
             abs_error: 1.0E-5,
             initial_step: 0.00050,
-            max_step: 0.5,
+            max_step: 0.25,
             method: IntegrationMethod::Rk4,
             disk_start: 1.0,
-            disk_end: 10.0,
+            disk_end: 100.0,
         }
     }
 }
