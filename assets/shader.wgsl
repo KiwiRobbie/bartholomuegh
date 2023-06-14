@@ -63,7 +63,7 @@ fn checker(dir: vec3<f32>, frequency: f32) -> f32 {
 }
 
 fn surface(point: vec3<f32>) -> vec3<f32> {
-    return vec3(fbm(10.0 * point));
+    return vec3(fbm(5.0 * point));
     // return vec3(fbm(10.0 * point)) * mix(vec3(0.8, 0.2, 0.2), vec3(0.2, 0.2, 0.8), checker(point, 5.0));
 }
 
@@ -106,6 +106,10 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
     var hit = 0.0;
     var phi = 0.0;
 
+
+    let disk_start = 2.0;
+    let disk_end = 10.0;
+
     var disk_hit = 0.0;
 
     for (var i = 0; i < uniforms.step_count; i += 1) {
@@ -145,23 +149,33 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
         let y = sqrt(dot(ray.pos, ray.pos) + dot(ray.dir, ray.dir));
         h = min(h * clamp(sqrt(max(abs_tol, abs(y) * rel_tol) / abs(error)), 0.3, 2.0), max_step);
 
-        ray = ray_fine;
-        if dot(ray.pos, ray.pos) < 1.0 && dot(ray.dir, ray.pos) < 0.0 {
-            hit = true; 
+        if dot(ray_fine.pos, ray_fine.pos) < 1.0 && dot(ray.pos, ray.pos) > 1.0 {
+            let l_i = sqrt(dot(ray.pos, ray.pos));
+            let l_f = sqrt(dot(ray_fine.pos, ray_fine.pos));
+
+            let t = -l_i / (l_f - l_i);
+            ray = Ray(
+                mix(ray.pos, ray_fine.pos, t),
+                mix(ray.dir, ray_fine.dir, t)
+            );
+            hit = 1.0; 
             break;
         }
         if (ray_fine.pos.y * ray.pos.y) <= 0.0 {
             let total_dist = ray_fine.pos.y - ray.pos.y;
             let t = -ray.pos.y / total_dist;
 
-            ray = Ray(
-                mix(ray.pos, ray_fine.pos, t),
+            let hit_ray = Ray(
+                mix(ray.pos, ray_fine.pos, t) * vec3(1.0, 0.0, 1.0),
                 mix(ray.dir, ray_fine.dir, t)
             );
-            ray.pos.y = 0.0;
 
-            disk_hit = 1.0;
+            let hit_distance = dot(hit_ray.pos, hit_ray.pos);
+            if hit_distance > disk_start * disk_start && hit_distance < disk_end * disk_end {
+                ray = hit_ray;
+                disk_hit = 1.0;
             break;
+            }
         }
 
         ray = ray_fine;
@@ -177,8 +191,8 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
     let early = max(0.0, (radius - 1.0) * (3.0 - radius));
 
     let warning_color = vec3(2.0, 0.5, 2.0);
-    let hit_color = max(mix(skybox(v_hat), surface(r_hat), f32(hit)), vec3(0.0));
-    output_colour = mix(hit_color, warning_color, early);
+    output_colour = max(mix(skybox(v_hat), surface(r_hat), hit), vec3(0.0));
+    // output_colour = mix(output_colour, warning_color, early);
     output_colour = mix(output_colour, disk(r), disk_hit);
     return vec4<f32>(output_colour, 1.0);
 }
