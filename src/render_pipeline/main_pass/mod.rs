@@ -50,7 +50,7 @@ impl Default for MainPassSettings {
             shadows: true,
             misc_bool: false,
             step_size: 0.02,
-            step_count: 250,
+            step_count: 150,
         }
     }
 }

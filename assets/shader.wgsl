@@ -88,26 +88,19 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
 
     var ray = get_camera(clip_space);
 
-
-
-
     let h_vec = cross(ray.pos, ray.dir);
     let h2 = dot(h_vec, h_vec);
 
-
-    let step_size = uniforms.step_size;
-
-    var hit = 0.0;
-    var phi = 0.0;
-
+    var hit = false;
     for (var i = 0; i < uniforms.step_count; i += 1) {
-        ray = rk4_step(ray, step_size, h2);
+        ray = rk4_step(ray, uniforms.step_size, h2);
 
         if dot(ray.pos, ray.pos) < 1.0 {
-            hit = 1.0; 
+            hit = true; 
             break;
         }
     }
+    
     let r = ray.pos;
     let v = ray.dir;
 
@@ -118,7 +111,7 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
     let early = max(0.0, (radius - 1.0) * (3.0 - radius));
 
     let warning_color = vec3(2.0, 0.5, 2.0);
-    let hit_color = max(mix(skybox(v_hat), surface(r_hat), hit), vec3(0.0));
+    let hit_color = max(mix(skybox(v_hat), surface(r_hat), f32(hit)), vec3(0.0));
     output_colour = mix(hit_color, warning_color, early);
     return vec4<f32>(output_colour, 1.0);
 }
