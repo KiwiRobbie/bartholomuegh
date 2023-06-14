@@ -43,13 +43,23 @@ fn ui_system(
                 ui.collapsing(format!("Camera Settings {}", i), |ui| {
                     ui.heading("Integration");
                     ui.add(
-                        Slider::new(&mut trace_settings.step_size, 0.0001..=0.1)
-                            .text("Step Size")
+                        Slider::new(&mut trace_settings.step_count, 1..=10000)
+                            .text("Step Count")
                             .logarithmic(true),
                     );
                     ui.add(
-                        Slider::new(&mut trace_settings.step_count, 1..=10000)
-                            .text("Step Count")
+                        Slider::new(&mut trace_settings.initial_step, 0.0001..=0.1)
+                            .text("Initial Step")
+                            .logarithmic(true),
+                    );
+                    ui.add(
+                        Slider::new(&mut trace_settings.rel_error, 0.0001..=0.1)
+                            .text("Relative Error Tolerance")
+                            .logarithmic(true),
+                    );
+                    ui.add(
+                        Slider::new(&mut trace_settings.abs_error, 0.0001..=0.1)
+                            .text("Absolute Error Tolerance")
                             .logarithmic(true),
                     );
                     ui.heading("Misc");
