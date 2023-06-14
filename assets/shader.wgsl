@@ -51,13 +51,30 @@ fn get_camera(clip_space: vec2<f32>) -> Ray {
 }
 
 #import "noise.wgsl"
+#import "blackbody.wgsl"
 
 fn fbm(v: vec3<f32>) -> f32 {
     return (0.5 * noise(1.0 * v) + 0.25 * noise(2.0 * v) + 0.125 * noise(4.0 * v));
 }
 
 fn skybox(dir: vec3<f32>) -> vec3<f32> {
-    return vec3(fbm(10.0 * dir)) * mix(vec3(0.75), vec3(0.25), checker(dir, 5.0));
+    let col_r = vec3(255.0, 83.0, 0.0);
+    let col_a = vec3(255.0, 180.0, 107.0);
+    let col_b = vec3(255.0, 238.0, 227.0);
+    let col_c = vec3(227.0, 233.0, 255.0);
+    let col_e = vec3(190.0, 210.0, 255.0);
+
+    let color = BlackBodyRadiation(1000.0 + pow(10.0, 4.0 * noise(200.0 * dir)), true, true);
+
+    // let color = mix(mix(col_b, col_c, noise(50.0 * dir)), col_a, pow(noise(25.0 * dir), 2.0));
+    // // return color;
+    return  log(color.a) * color.rgb * vec3(
+        pow(
+            noise(100.0 * dir) * noise(200.0 * dir) * noise(400.0 * dir),
+            10.0
+        )
+    );
+    // return vec3(fbm(10.0 * dir)) * mix(vec3(0.75), vec3(0.25), checker(dir, 5.0));
 }
 
 fn checker(dir: vec3<f32>, frequency: f32) -> f32 {
