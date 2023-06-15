@@ -183,23 +183,82 @@ fn derivatives(
     R: f32,
     Theta: f32,
 ) -> State {
-    // Prartial Derivatives
-    let drho_r = r / sqrt(a * a * cos(theta) + r * r);
-    let drho_theta = -(a * a) * sin(theta) / (2.0 * sqrt(a * a * cos(theta) + r * r));
-    let dDelta_r = 2.0 * r - 2.0;
-    let dP_b = -a;
-    let dR_b = -Delta * (-2.0 * a + 2.0 * b) + 2.0 * P * dP_b;
-    let dTheta_b = -2.0 * b * cos(theta) * cos(theta) / (sin(theta) * sin(theta));
-    let dTheta_theta = 2.0 * b * b * pow(cos(theta) / sin(theta), 3.0) + 2.0 * (-(a * a) + b * b / (sin(theta) * sin(theta))) * sin(theta) * cos(theta);
 
-    // State Derivatives
+    let x0_0: f32 = a * a;
+    let x0_1: f32 = r * r;
+    let o0: f32 = p_r * (-2.0 * r + x0_0 + x0_1) / (x0_0 * cos(theta) * cos(theta) + x0_1);
+
+    let o1: f32 = p_theta / (a * a * cos(theta) * cos(theta) + r * r);
+
+    let x2_0: f32 = a * a;
+    let x2_1: f32 = 2.0 * r;
+    let x2_2: f32 = r * r;
+    let x2_3: f32 = cos(theta) * cos(theta);
+    let x2_4: f32 = x2_0 * x2_3;
+    let x2_5: f32 = a * x2_1;
+    let o2: f32 = (-b * x2_1 + b * x2_2 + b * x2_4 - x2_3 * x2_5 + x2_5) / ((x2_2 + x2_4) * (x2_0 - x2_1 + x2_2) * sin(theta) * sin(theta));
+
+    let x3_0: f32 = sin(theta) * sin(theta);
+    let x3_1: f32 = 2.0 * r;
+    let x3_2: f32 = r * r;
+    let x3_3: f32 = a * a;
+    let x3_4: f32 = x3_2 + x3_3;
+    let x3_5: f32 = -x3_1 + x3_4;
+    let x3_6: f32 = x3_5 * x3_5;
+    let x3_7: f32 = cos(theta) * cos(theta);
+    let x3_8: f32 = x3_2 + x3_3 * x3_7;
+    let x3_9: f32 = p_r * p_r;
+    let x3_10: f32 = x3_0 * x3_6;
+    let x3_11: f32 = r - 1.0;
+    let x3_12: f32 = -x3_11 * x3_8;
+    let x3_13: f32 = q * x3_0 + x3_7 * (-b * b + x3_0 * x3_3);
+    let x3_14: f32 = -a * b + x3_4;
+    let x3_15: f32 = q + (a - b) * (a - b) ;
+    let x3_16: f32 = x3_0 * (x3_14 * x3_14 - x3_15 * x3_5) + x3_13 * x3_5;
+    let o3: f32 = (r * x3_10 * (p_theta * p_theta + x3_5 * x3_9) - r * x3_16 * x3_5 + x3_10 * x3_12 * x3_9 + x3_12 * x3_16 + x3_5 * x3_8 * (x3_0 * (x3_1 * x3_14 - x3_11 * x3_15) + x3_11 * x3_13)) / (x3_0 * x3_6 * x3_8 * x3_8);
+
+    let x4_0: f32 = cos(theta);
+    let x4_1: f32 = sin(theta);
+    let x4_2: f32 = r * r;
+    let x4_3: f32 = a * a;
+    let x4_4: f32 = x4_2 + x4_3;
+    let x4_5: f32 = -2.0 * r + x4_4;
+    let x4_6: f32 = x4_0 * x4_0 ;
+    let x4_7: f32 = x4_2 + x4_3 * x4_6;
+    let x4_8: f32 = -b * b;
+    let x4_9: f32 = pow(x4_1, 4.0) * x4_3;
+    let x4_10: f32 = x4_1 * x4_1;
+    let x4_11: f32 = x4_10 * x4_3;
+    let o4: f32 = x4_0 * (x4_11 * (x4_10 * (-x4_5 * (q + (a - b) * (a - b)) + (-a * b + x4_4) * (-a * b + x4_4)) + x4_5 * (q * x4_10 + x4_6 * (x4_11 + x4_8))) + x4_5 * x4_7 * (-x4_8 - x4_9) + x4_5 * x4_9 * (-p_r * p_r * x4_5 - p_theta * p_theta)) / (x4_1 * x4_1 * x4_1 * x4_5 * x4_7 * x4_7);
+
+
+
     return State(
-        Delta / rho * rho * p_r,
-        1.0 / (rho * rho) * p_theta,
-        (Delta * dTheta_b + dR_b) / (2.0 * Delta * rho * rho),
-        (Theta * dDelta_r / (2.0 * Delta * rho * rho) + p_r * p_r * Delta * drho_r / (rho * rho * rho) - p_r * p_r * dDelta_r / (2.0 * rho * rho) + p_theta * p_theta * drho_r / (rho * rho * rho) - (R + Theta * Delta) * drho_r / (Delta * rho * rho * rho) - (R + Theta * Delta) * dDelta_r / (2.0 * Delta * Delta * rho * rho)),
-        (Delta * p_r * p_r * drho_theta / (rho * rho * rho) + p_theta * p_theta * drho_theta / (rho * rho * rho) - (Delta * Theta + R) * drho_theta / (Delta * rho * rho * rho) + (Delta * dTheta_theta) / (2.0 * Delta * rho * rho)),
+        o0,
+        o1,
+        o2,
+        o3,
+        o4
     );
+
+
+    // // Prartial Derivatives
+    // let drho_r = r / sqrt(a * a * cos(theta) + r * r);
+    // let drho_theta = -(a * a) * sin(theta) / (2.0 * sqrt(a * a * cos(theta) + r * r));
+    // let dDelta_r = 2.0 * r - 2.0;
+    // let dP_b = -a;
+    // let dR_b = -Delta * (-2.0 * a + 2.0 * b) + 2.0 * P * dP_b;
+    // let dTheta_b = -2.0 * b * cos(theta) * cos(theta) / (sin(theta) * sin(theta));
+    // let dTheta_theta = 2.0 * b * b * pow(cos(theta) / sin(theta), 3.0) + 2.0 * (-(a * a) + b * b / (sin(theta) * sin(theta))) * sin(theta) * cos(theta);
+
+    // // State Derivatives
+    // return State(
+    //     Delta / rho * rho * p_r,
+    //     1.0 / (rho * rho) * p_theta,
+    //     (Delta * dTheta_b + dR_b) / (2.0 * Delta * rho * rho),
+    //     (Theta * dDelta_r / (2.0 * Delta * rho * rho) + p_r * p_r * Delta * drho_r / (rho * rho * rho) - p_r * p_r * dDelta_r / (2.0 * rho * rho) + p_theta * p_theta * drho_r / (rho * rho * rho) - (R + Theta * Delta) * drho_r / (Delta * rho * rho * rho) - (R + Theta * Delta) * dDelta_r / (2.0 * Delta * Delta * rho * rho)),
+    //     (Delta * p_r * p_r * drho_theta / (rho * rho * rho) + p_theta * p_theta * drho_theta / (rho * rho * rho) - (Delta * Theta + R) * drho_theta / (Delta * rho * rho * rho) + (Delta * dTheta_theta) / (2.0 * Delta * rho * rho)),
+    // );
 }
 
 
@@ -322,8 +381,9 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
 
     let theta_0 = theta;
 
+    var dstate: State;
     for (var i = 0; i < uniforms.step_count; i += 1) {
-        let state = derivatives(
+        let dstate = derivatives(
             r,
             theta,
             phi,
@@ -342,13 +402,12 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
             R,
             Theta
         );
-        output_colour = vec3(state.r);
 
-        r = r + h * state.r;
-        theta = theta + h * state.theta;
-        phi = phi + h * state.phi;
-        p_r = p_r + h * state.p_r;
-        p_theta = p_theta + h * state.p_theta;
+        r = r + h * dstate.r;
+        theta = theta + h * dstate.theta;
+        phi = phi + h * dstate.phi;
+        p_r = p_r + h * dstate.p_r;
+        p_theta = p_theta + h * dstate.p_theta;
 
         // Update required values
         metric_values(
@@ -380,7 +439,6 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
             &R,
             &Theta
         );
-        // output_colour += vec3(0.0, 0.02, 0.0);
     }
 
     // let h_vec = cross(ray.pos, ray.dir);
@@ -496,14 +554,50 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
     //     )
     // );
 
-    output_colour = vec3(checker(
-        spherical_to_dir(theta, phi),
-        5.0
-    ) * select(
-        vec3(1.0, 0.0, 0.0),
-        vec3(0.0, 0.0, 1.0),
-        r > 0.0
-    ));
+    // output_colour = skybox(
+    //     spherical_to_dir(theta, phi)
+    // );
+
+    let r_hat = spherical_to_dir(theta, phi);
+    let phi_hat = normalize(cross(vec3(0.0, 1.0, 0.0), r_hat)) ;
+    let theta_hat = normalize(cross(phi_hat, r_hat)) ;
+
+    let dir = phi_hat ;
+
+
+    let f = select(1.0, 0.0, length(r_hat) == 0.0);
+
+
+    let _d = derivatives(
+        r,
+        theta,
+        phi,
+        a,
+        rho,
+        Delta,
+        Sigma,
+        alpha,
+        omega,
+        omega_bar,
+        p_r,
+        p_theta,
+        b,
+        q,
+        P,
+        R,
+        Theta
+    );
+
+    output_colour = vec3(_d.r, _d.phi, _d.theta);
+    // output_colour = vec3(checker(
+    //     // length(dir),
+    //     spherical_to_dir(theta, phi),
+    //     5.0
+    // ) * select(
+    //     vec3(1.0, 0.0, 0.0),
+    //     vec3(0.0, 0.0, 1.0),
+    //     r > 2.0
+    // ));
 
     return vec4<f32>(output_colour, 1.0);
 }

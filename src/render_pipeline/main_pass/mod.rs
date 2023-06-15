@@ -154,7 +154,7 @@ fn prepare_uniforms(
 
         let r = transform.translation.length();
         let theta: f32 = PI / 2.0;
-        let phi: f32 = 0.0;
+        let phi: f32 = f32::atan2(transform.translation.x, transform.translation.y);
         let a = settings.max_step;
 
         let Omega: f32 = 1.0 / (a + r.powf(3.0 / 2.0));
@@ -181,9 +181,9 @@ fn prepare_uniforms(
             disk_start: settings.disk_start,
             disk_end: settings.disk_end,
 
-            r: transform.translation.length(),
+            r: (transform.translation * Vec3::new(1.0, 0.0, 1.0)).length(),
             theta: 1.5707963267948966,
-            phi: 0.0,
+            phi: phi,
             a: settings.max_step,
             rho: 4.0,
             Delta: 8.9801,
