@@ -43,14 +43,14 @@ d_p_theta = expr(
 
 
 def metric_values(r, theta, phi, a):
-    rho_v = rho.subs({"r": r, "a": a, "theta": theta}).evalf()
-    Delta_v = Delta.subs({"r": r, "a": a}).evalf()
-    Sigma_v = Sigma.subs({"r": r, "a": a, "theta": theta, "Delta": Delta_v}).evalf()
-    alpha_v = alpha.subs({"rho": rho_v, "Delta": Delta_v, "Sigma": Sigma_v}).evalf()
-    omega_v = omega.subs({"a": a, "r": r, "Sigma": Sigma_v}).evalf()
-    omega_bar_v = omega_bar.subs(
-        {"a": a, "r": r, "Sigma": Sigma_v, "theta": theta, "rho": rho_v}
-    ).evalf()
+    rho_v = rho.evalf(subs={"r": r, "a": a, "theta": theta})
+    Delta_v = Delta.evalf(subs={"r": r, "a": a})
+    Sigma_v = Sigma.evalf(subs={"r": r, "a": a, "theta": theta, "Delta": Delta_v})
+    alpha_v = alpha.evalf(subs={"rho": rho_v, "Delta": Delta_v, "Sigma": Sigma_v})
+    omega_v = omega.evalf(subs={"a": a, "r": r, "Sigma": Sigma_v})
+    omega_bar_v = omega_bar.evalf(
+        subs={"a": a, "r": r, "Sigma": Sigma_v, "theta": theta, "rho": rho_v}
+    )
 
     return {
         "r": r,
@@ -67,7 +67,7 @@ def metric_values(r, theta, phi, a):
 
 
 def sub_metric_values(expr, values):
-    return expr.subs(values).evalf()
+    return expr.evalf(subs=values)
 
 
 class Observer:
@@ -246,7 +246,7 @@ class Ray:
         self.values["Theta"] = self.eval(Theta)
 
     def eval(self, expression):
-        return expression.subs(self.values).evalf()
+        return expression.evalf(subs=self.values)
 
     def _calculate_partials(self):
         partials = {}
@@ -432,7 +432,7 @@ ray = observer.fido_ray(1, 1, 1)
 
 data = ([], [], [])
 
-for i in range(1000):
+for i in range(100):
     print(i)
     ray.euler_step(0.01)
     _r = ray.r
@@ -446,17 +446,18 @@ for i in range(1000):
     )
     data[2].append((_r * sp.cos(_theta)).evalf())
 
-ax = plt.figure().add_subplot(projection="3d")
 
-x = data[0]
-y = data[1]
-z = data[2]
+# ax = plt.figure().add_subplot(projection="3d")
 
-ax.plot(x, y, z, label="parametric curve")
-eps = 1e-16
-ax.axes.set_xlim3d(left=-5.0 - eps, right=5 + eps)
-ax.axes.set_ylim3d(bottom=-5.0 - eps, top=5 + eps)
-ax.axes.set_zlim3d(bottom=-5.0 - eps, top=5 + eps)
-ax.legend()
+# x = data[0]
+# y = data[1]
+# z = data[2]
 
-plt.show()
+# ax.plot(x, y, z, label="parametric curve")
+# eps = 1e-16
+# ax.axes.set_xlim3d(left=-5.0 - eps, right=5 + eps)
+# ax.axes.set_ylim3d(bottom=-5.0 - eps, top=5 + eps)
+# ax.axes.set_zlim3d(bottom=-5.0 - eps, top=5 + eps)
+# ax.legend()
+
+# plt.show()
