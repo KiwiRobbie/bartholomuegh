@@ -3,21 +3,22 @@ from math import sqrt, cos, sin
 # Ray = (r, theta, phi, a, rho, Delta, Sigma, alpha, omega, omega_bar, p_r, p_theta, b, q, P, R, Theta)
 # Metric = (r, theta, phi, a, rho, Delta, Sigma, alpha, omega, omega_bar)
 
-rho = lambda r, theta, phi, a: sqrt(r**2 + a**2 * cos(theta))
-Delta = lambda r, theta, phi, a: r**2 - 2 * r + a**2
-Sigma = lambda r, theta, phi, a: sqrt(
-    (r**2 + a**2) ** 2 - a**2 * Delta * sin(theta) ** 2
-)
-alpha = lambda r, theta, phi, a: rho * sqrt(Delta) / Sigma
-omega = lambda r, theta, phi, a: 2 * a * r / Sigma**2
-omega_bar = lambda r, theta, phi, a: Sigma * sin(theta) / rho
+
+def metric_values(r, theta, phi, a):
+    rho = sqrt(r**2 + a**2 * cos(theta))
+    Delta = r**2 - 2 * r + a**2
+    Sigma = sqrt((r**2 + a**2) ** 2 - a**2 * Delta * sin(theta) ** 2)
+    alpha = rho * sqrt(Delta) / Sigma
+    omega = 2 * a * r / Sigma**2
+    omega_bar = Sigma * sin(theta) / rho
+    return (r, theta, phi, a, rho, Delta, Sigma, alpha, omega, omega_bar)
 
 
-P = lambda r, theta, phi, p_r, p_theta, b, q, a: r**2 + a**2 - a * b
-R = lambda P, r, theta, phi, p_r, p_theta, b, q, a: P**2 - Delta * ((b - a) ** 2 + q)
-Theta = lambda r, theta, phi, p_r, p_theta, b, q, a: q - cos(theta) ** 2 * (
-    b**2 / sin(theta) ** 2 - a**2
-)
+def ray_values(r, theta, phi, a, rho, Delta, Sigma, alpha, omega, omega_bar, b, q):
+    P = r**2 + a**2 - a * b
+    R = P**2 - Delta * ((b - a) ** 2 + q)
+    Theta = q - cos(theta) ** 2 * (b**2 / sin(theta) ** 2 - a**2)
+    return (P, R, Theta)
 
 
 # partials["Delta"] = (
@@ -146,8 +147,3 @@ def derivatives(
     )
 
     return (d_r, d_theta, d_phi, d_p_r, d_p_theta)
-
-
-derivatives(
-    1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0
-)
