@@ -113,23 +113,19 @@ pub struct TraceUniforms {
 #[derive(Component, Deref, DerefMut)]
 struct ViewMainPassUniformBuffer(UniformBuffer<TraceUniforms>);
 
-fn rho(r: f32, theta: f32, a: f32) -> f32 {
-    (r * r + a * a * theta.cos().powi(2)).powf(0.5)
-}
-fn delta(r: f32, a: f32) -> f32 {
-    r * r - 2.0 * r + a * a
-}
-fn alpha(r: f32, theta: f32, a: f32) -> f32 {
-    let sigma = ((r * r + a * a).powi(2) - a * a * delta(r, a) * theta.sin().powi(2)).sqrt();
-    rho(r, theta, a) * delta(r, a).sqrt() / sigma
-}
-fn omega(a: f32, r: f32, theta: f32) -> f32 {
-    let sigma2 = (r * r + a * a).powi(2) - a * a * delta(r, a) * theta.sin().powi(2);
-    2.0 * a * r / sigma2
-}
-fn omega_bar(r: f32, theta: f32, a: f32) -> f32 {
-    let sigma = ((r * r + a * a).powi(2) - a * a * delta(r, a) * theta.sin().powi(2)).sqrt();
-    sigma * theta.sin() / rho(r, theta, a)
+fn metric_values(
+    r: f32,
+    theta: f32,
+    phi: f32,
+    a: f32,
+) -> (f32, f32, f32, f32, f32, f32, f32, f32, f32, f32) {
+    let rho = (r.powi(2) + a.powi(2) * theta.cos().powi(2)).sqrt();
+    let Delta = r.powi(2) - 2.0 * r + a.powi(2);
+    let Sigma = ((r.powi(2) + a.powi(2)).powi(2) - a.powi(2) * Delta * theta.sin().powi(2)).sqrt();
+    let alpha = rho * Delta.sqrt() / Sigma;
+    let omega = 2.0 * a * r / Sigma.powi(2);
+    let omega_bar = Sigma * theta.sin() / rho;
+    return (r, theta, phi, a, rho, Delta, Sigma, alpha, omega, omega_bar);
 }
 
 fn prepare_uniforms(
@@ -152,15 +148,18 @@ fn prepare_uniforms(
 
         let transform = Transform::from_matrix(view);
 
-        let r = (transform.translation * Vec3::new(1.0, 0.0, 1.0)).length();
-
+        let r = Vec3::new(transform.translation.x, 0.0, transform.translation.z).length();
         let theta: f32 = PI / 2.0;
-        let phi: f32 = f32::atan2(transform.translation.x, transform.translation.y);
-        let a = settings.max_step;
+        let phi: f32 = f32::atan2(transform.translation.x, transform.translation.z);
+        let a = 0.0;
+
+        let (r, theta, phi, a, rho, Delta, Sigma, alpha, omega, omega_bar) =
+            metric_values(r, theta, phi, a);
+
+        let B = Vec3::new(0.0, 0.0, 1.0);
 
         let Omega: f32 = 1.0 / (a + r.powf(3.0 / 2.0));
-
-        let beta = omega_bar(r, theta, a) / alpha(r, theta, a) * (Omega - omega(a, r, theta));
+        let beta = omega_bar / alpha * (Omega - omega);
 
         let uniforms = TraceUniforms {
             camera,
@@ -186,15 +185,15 @@ fn prepare_uniforms(
             theta,
             phi,
             a: settings.max_step,
-            rho: rho(r, theta, a),
-            Delta: delta(r, a),
-            Sigma: ((r * r + a * a).powi(2) - a * a * delta(r, a) * theta.sin().powi(2)).sqrt(),
-            alpha: alpha(r, theta, a),
-            omega: omega(a, r, theta),
-            omega_bar: omega_bar(r, theta, a),
-            B_r: 0.0,
-            B_theta: 0.0,
-            B_phi: 1.0,
+            rho,
+            Delta,
+            Sigma,
+            alpha,
+            omega,
+            omega_bar,
+            B_r: B.x,
+            B_theta: B.y,
+            B_phi: B.z,
             beta: beta,
             // theta: 1.5707963267948966,
             // phi: phi,

@@ -180,7 +180,7 @@ class Ray:
 ax = plt.figure().add_subplot(projection="3d")
 
 
-observer = Observer(4.0, pi / 2, 0, 0.0, 0.0, 0.0, 1.0)
+observer = Observer(100.0, pi / 2, 0, 0.0, 0.0, 0.0, 1.0)
 
 
 for phi in np.linspace(-pi / 2, pi / 2, 2, endpoint=False):
@@ -190,9 +190,9 @@ for phi in np.linspace(-pi / 2, pi / 2, 2, endpoint=False):
 
         ray = observer.fido_ray(x, y, z)
         data = ([], [], [])
-        for i in range(500):
+        for i in range(5000):
             try:
-                ray.euler_step(0.05)
+                ray.euler_step(0.025)
             except:
                 break
             _r = ray.r

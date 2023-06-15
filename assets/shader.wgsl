@@ -330,7 +330,11 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
 
 
     // Camera ray
-    let n: vec3<f32> = normalize(ray.dir);
+    let n: vec3<f32> = normalize(vec3(
+        ray.dir.x * cos(phi) - ray.dir.z * sin(phi),
+        ray.dir.x * sin(phi) + ray.dir.z * cos(phi),
+        ray.dir.y,
+    ));
 
     // Cartesian FIDO ray
     let quotient: f32 = 1.0 - beta * n.y;
@@ -342,7 +346,7 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
 
 
     // Spherical FIDO ray
-    let kappa: f32 = sqrt(1.0 - B_theta * 2.0);
+    let kappa: f32 = sqrt(1.0 - B_theta * B_theta);
     let nF_r: f32 = (B_phi / kappa * nF.x + B_r * nF.y + B_r * B_theta / kappa * nF.z);
     let nF_theta: f32 = B_theta * nF.y - kappa * nF.z;
     let nF_phi: f32 = (-B_r / kappa * nF.x + B_phi * nF.y + B_theta * B_phi / kappa * nF.z);
@@ -357,49 +361,11 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
     let b = p_phi;
     let q = p_theta * p_theta + cos(theta) * cos(theta) * (b * b / (sin(theta) * sin(theta)) - a * a);
 
-    // Calculate ray values 
-    metric_values(
-        r,
-        theta,
-        phi,
-        a,
-        &rho,
-        &Delta,
-        &Sigma,
-        &alpha,
-        &omega,
-        &omega_bar,
-    );
-
-    var P: f32 = 0.0;
-    var R: f32 = 0.0;
-    var Theta: f32 = 0.0;
-    ray_values(
-        r,
-        theta,
-        phi,
-        a,
-        rho,
-        Delta,
-        Sigma,
-        alpha,
-        omega,
-        omega_bar,
-        b,
-        q,
-        &P,
-        &R,
-        &Theta
-    );
-    let r_0 = r;
-    // let h = -1.0;
-    var h = uniforms.initial_step;
+    var h = 100.0 * uniforms.initial_step;
     let rel_tol = uniforms.rel_error;
     let abs_tol = uniforms.abs_error;
     let max_step = uniforms.max_step;
 
-
-    let theta_0 = theta;
 
     var dstate: State;
     var color = vec3(0.0);
@@ -410,19 +376,10 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
             theta,
             phi,
             a,
-            // rho,
-            // Delta,
-            // Sigma,
-            // alpha,
-            // omega,
-            // omega_bar,
             p_r,
             p_theta,
             b,
             q,
-            // P,
-            // R,
-            // Theta
         );
 
         let coarse = State(
@@ -446,19 +403,10 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
             theta,
             phi,
             a,
-            // rho,
-            // Delta,
-            // Sigma,
-            // alpha,
-            // omega,
-            // omega_bar,
             p_r,
             p_theta,
             b,
             q
-            // P,
-            // R,
-            // Theta
         );
 
         let fine = State(
@@ -468,11 +416,6 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
             p_r - 0.5 * h * k2.p_r,
             p_theta - 0.5 * h * k2.p_theta,
         );
-// r,
-// theta,
-// phi,
-// p_r,
-// p_theta,
 
         let error_state = State(
             coarse.r - fine.r,
@@ -486,28 +429,10 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
             error_state.r * error_state.r + error_state.theta * error_state.theta + error_state.phi * error_state.phi + error_state.p_r * error_state.p_r + error_state.p_r * error_state.p_r
         );
 
-        let y = sqrt(dot(ray.pos, ray.pos) + dot(ray.dir, ray.dir));
+        let y = sqrt(
+            r * r + theta * theta + phi * phi + p_r * p_r + p_r * p_r
+        );
         h = min(h * clamp(sqrt(max(abs_tol, abs(y) * rel_tol) / abs(error)), 0.3, 2.0), max_step);
-
-        if (fine.theta * theta) <= 0.0 {
-            // Approximate hit location
-            // let t = -ray.pos.y / (ray_fine.pos.y - ray.pos.y);
-            // let hit_ray = Ray(
-            //     mix(ray.pos, ray_fine.pos, t) * vec3(1.0, 0.0, 1.0),
-            //     mix(ray.dir, ray_fine.dir, t)
-            // );
-
-            color += disk(
-                r,
-                phi
-            );
-
-            // Check for disk intersection
-            // let hit_distance = dot(hit_ray.pos, hit_ray.pos);
-            // if hit_distance >= disk_start * disk_start && hit_distance < disk_end * disk_end {
-            //     color += disk(hit_ray.pos);
-            // }
-        }
 
         r = fine.r;
         theta = fine.theta;
@@ -639,19 +564,10 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
         theta,
         phi,
         a,
-            // rho,
-            // Delta,
-            // Sigma,
-            // alpha,
-            // omega,
-            // omega_bar,
         p_r,
         p_theta,
         b,
         q,
-            // P,
-            // R,
-            // Theta
     );
 
     let r_hat = spherical_to_dir(theta, phi);
@@ -662,7 +578,7 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
 
     let f = select(1.0, 0.0, length(r_hat) == 0.0);
 
-    let dir = r_hat * _d.r + r * theta_hat * _d.theta + 1.0 * r * phi_hat * _d.phi;
+    let dir = normalize(r_hat * _d.r + r * theta_hat * _d.theta + 1.0 * r * phi_hat * _d.phi);
 
     // let dir = normalize(
     //     (r + _d.r) * spherical_to_dir(theta + _d.theta, phi + _d.phi) - r * spherical_to_dir(theta, phi)
@@ -678,9 +594,10 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
     ) * select(
         vec3(1.0, 0.0, 0.0),
         vec3(0.0, 0.0, 1.0),
-        r > 25.0
+        r > 500.0
     ));
     // output_colour = dir;
     // output_colour.y = vec3(checker(dir, 5.0)).y;
+    output_colour = skybox(dir);
     return vec4<f32>(output_colour, 1.0);
 }
