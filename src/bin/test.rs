@@ -236,6 +236,7 @@ impl BoyerLindquistObserver {
                 + self.B_phi * cartesian_fido.y
                 + self.B_theta * self.B_theta / kappa * cartesian_fido.z, // phi
         };
+
         let mut ray = RayState::new(bh, self.r, self.theta, self.phi, 0.0, 0.0, 0.0, 0.0);
 
         let E_f = 1.0 / (ray.alpha() + ray.omega() * ray.omega_bar() * spherical_fido.z);
@@ -271,8 +272,8 @@ fn main() {
         B_phi: 1.0,
     };
 
-    let mut ray = observer.fido_ray(Vec3::new(1.0, 0.0, 0.0), bh);
-
+    let mut ray = observer.fido_ray(Vec3::new(1.0, 1.0, 1.0).normalize(), bh);
+    dbg!(&ray);
     dbg!((
         ray.dr(),
         ray.dtheta(),
