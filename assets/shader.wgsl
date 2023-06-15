@@ -286,19 +286,11 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
 
 
 
-    // Observer 
+    // // Observer 
     var r: f32 = uniforms.r;
     var theta: f32 = uniforms.theta;
     var phi: f32 = uniforms.phi;
-    var a: f32 = uniforms.a;
-
-
-    // var r: f32 = 4.0;
-    // var theta: f32 = 1.5707963267948966;
-    // var phi: f32 = 0.0;
-
-    // var a: f32 = uniforms.max_step;
-
+    var a: f32 = uniforms.disk_end / 100.0;
     var rho: f32 = uniforms.rho;
     var Delta: f32 = uniforms.Delta;
     var Sigma: f32 = uniforms.Sigma;
@@ -310,6 +302,22 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
     let B_phi: f32 = uniforms.B_phi;
     let beta: f32 = uniforms.beta;
 
+
+    // var r: f32 = 4.0;
+    // var theta: f32 = 1.5707963267948966;
+    // var phi: f32 = uniforms.time;
+    // var a: f32 = uniforms.max_step;
+    // var rho: f32 = 4.0;
+    // var Delta: f32 = 8.0;
+    // var Sigma: f32 = 16.0;
+    // var alpha: f32 = 0.7071067811865476;
+    // var omega: f32 = 0.0;
+    // var omega_bar: f32 = 4.0;
+    // let B_r: f32 = 0.0;
+    // let B_theta: f32 = 0.0;
+    // let B_phi: f32 = 1.0;
+    // let beta: f32 = 0.7071067811865475;
+    // (4.0, 1.5707963267948966, 0, 0.0, 4.0, 8.0, 16.0, 0.7071067811865476, 0.0, 4.0) (0.0, 0.0, 1.0) 0.7071067811865475
 
 
 
@@ -377,13 +385,17 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
     );
     let r_0 = r;
     // let h = -1.0;
-    let h = -uniforms.initial_step;
+    var h = uniforms.initial_step;
+    let rel_tol = uniforms.rel_error;
+    let abs_tol = uniforms.abs_error;
+    let max_step = uniforms.max_step;
+
 
     let theta_0 = theta;
 
     var dstate: State;
     for (var i = 0; i < uniforms.step_count; i += 1) {
-        let dstate = derivatives(
+        let k1 = derivatives(
             r,
             theta,
             phi,
@@ -403,13 +415,21 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
             Theta
         );
 
-        r = r + h * dstate.r;
-        theta = theta + h * dstate.theta;
-        phi = phi + h * dstate.phi;
-        p_r = p_r + h * dstate.p_r;
-        p_theta = p_theta + h * dstate.p_theta;
+        let coarse = State(
+            r - h * k1.r,
+            theta - h * k1.theta,
+            phi - h * k1.phi,
+            p_r - h * k1.p_r,
+            p_theta - h * k1.p_theta,
+        );
 
-        // Update required values
+
+        r = r - 0.5 * h * k1.r;
+        theta = theta - 0.5 * h * k1.theta;
+        phi = phi - 0.5 * h * k1.phi;
+        p_r = p_r - 0.5 * h * k1.p_r;
+        p_theta = p_theta - 0.5 * h * k1.p_theta;
+
         metric_values(
             r,
             theta,
@@ -439,15 +459,91 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
             &R,
             &Theta
         );
+
+        let k2 = derivatives(
+            r,
+            theta,
+            phi,
+            a,
+            rho,
+            Delta,
+            Sigma,
+            alpha,
+            omega,
+            omega_bar,
+            p_r,
+            p_theta,
+            b,
+            q,
+            P,
+            R,
+            Theta
+        );
+
+        r = r - 0.5 * h * k2.r;
+        theta = theta - 0.5 * h * k2.theta;
+        phi = phi - 0.5 * h * k2.phi;
+        p_r = p_r - 0.5 * h * k2.p_r;
+        p_theta = p_theta - 0.5 * h * k2.p_theta;
+
+        let fine = State(
+            r,
+            theta,
+            phi,
+            p_r,
+            p_theta,
+        );
+
+        metric_values(
+            r,
+            theta,
+            phi,
+            a,
+            &rho,
+            &Delta,
+            &Sigma,
+            &alpha,
+            &omega,
+            &omega_bar,
+        );
+        ray_values(
+            r,
+            theta,
+            phi,
+            a,
+            rho,
+            Delta,
+            Sigma,
+            alpha,
+            omega,
+            omega_bar,
+            b,
+            q,
+            &P,
+            &R,
+            &Theta
+        );
+
+        let error_state = State(
+            coarse.r - fine.r,
+            coarse.theta - fine.theta,
+            coarse.phi - fine.phi,
+            coarse.p_r - fine.p_r,
+            coarse.p_r - fine.p_r,
+        );
+
+        let error = sqrt(
+            error_state.r * error_state.r + error_state.theta * error_state.theta + error_state.phi * error_state.phi + error_state.p_r * error_state.p_r + error_state.p_r * error_state.p_r
+        );
+
+        let y = sqrt(dot(ray.pos, ray.pos) + dot(ray.dir, ray.dir));
+        h = min(h * clamp(sqrt(max(abs_tol, abs(y) * rel_tol) / abs(error)), 0.3, 2.0), max_step);
     }
 
     // let h_vec = cross(ray.pos, ray.dir);
     // let h2 = dot(h_vec, h_vec);
 
-    // var h = uniforms.initial_step;
-    // let rel_tol = uniforms.rel_error;
-    // let abs_tol = uniforms.abs_error;
-    // let max_step = uniforms.max_step;
+ 
 
 
     // var hit = 0.0;
@@ -558,14 +654,7 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
     //     spherical_to_dir(theta, phi)
     // );
 
-    let r_hat = spherical_to_dir(theta, phi);
-    let phi_hat = normalize(cross(vec3(0.0, 1.0, 0.0), r_hat)) ;
-    let theta_hat = normalize(cross(phi_hat, r_hat)) ;
 
-    let dir = phi_hat ;
-
-
-    let f = select(1.0, 0.0, length(r_hat) == 0.0);
 
 
     let _d = derivatives(
@@ -588,16 +677,25 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
         Theta
     );
 
-    output_colour = vec3(_d.r, _d.phi, _d.theta);
-    // output_colour = vec3(checker(
-    //     // length(dir),
-    //     spherical_to_dir(theta, phi),
-    //     5.0
-    // ) * select(
-    //     vec3(1.0, 0.0, 0.0),
-    //     vec3(0.0, 0.0, 1.0),
-    //     r > 2.0
-    // ));
+    let r_hat = spherical_to_dir(theta, phi);
+    let phi_hat = normalize(cross(vec3(0.0, 1.0, 0.0), r_hat)) ;
+    let theta_hat = normalize(cross(phi_hat, r_hat)) ;
 
+
+
+    let f = select(1.0, 0.0, length(r_hat) == 0.0);
+
+    let dir = r_hat * _d.r + phi_hat * _d.phi / r + theta_hat * _d.theta / r;
+    // output_colour = vec3(_d.r, _d.phi, _d.theta);
+    output_colour = vec3(checker(
+        // length(dir),
+        spherical_to_dir(theta, phi),
+        1.0
+    ) * select(
+        vec3(1.0, 0.0, 0.0),
+        vec3(0.0, 0.0, 1.0),
+        r > 2.0
+    ));
+    output_colour.y = vec3(checker(dir, 1.0)).y;
     return vec4<f32>(output_colour, 1.0);
 }
