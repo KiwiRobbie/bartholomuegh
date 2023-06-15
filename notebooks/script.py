@@ -5,41 +5,6 @@ import matplotlib.pyplot as plt
 
 
 # Expressions
-rho = expr("sqrt(r**2 + a**2*cos(theta))")
-Delta = expr("r**2 -2*r+a**2")
-Sigma = expr("sqrt((r**2+a**2)**2 -a**2*Delta*sin(theta)**2)")
-alpha = expr("rho*sqrt(Delta)/Sigma")
-omega = expr("2* a*r/Sigma**2")
-omega_bar = expr("Sigma*sin(theta)/rho")
-
-P = expr("r**2 + a**2 - a*b")
-R = expr("P**2 - Delta*((b-a)**2+q)")
-Theta = expr("q-cos(theta)**2* (b**2/sin(theta)**2-a**2)")
-
-d_r = expr("Delta/rho**2*p_r")
-d_theta = expr("1/rho**2*p_theta")
-
-d_phi = expr("(Delta*Derivative(Theta(b), b) + Derivative(R(b), b))/(2*Delta*rho**2)")
-d_p_r = expr(
-    "Theta*Derivative(Delta(r), r)/(2*Delta*rho**2) + p_r**2*Delta*Derivative(rho(r), r)/rho**3 - p_r**2*Derivative(Delta(r), r)/(2*rho**2) + p_theta**2*Derivative(rho(r), r)/rho**3 - (R + Theta*Delta)*Derivative(rho(r), r)/(Delta*rho**3) - (R + Theta*Delta)*Derivative(Delta(r), r)/(2*Delta**2*rho**2)"
-)
-d_p_theta = expr(
-    "Delta*p_r**2*Derivative(rho(theta), theta)/rho**3 + p_theta**2*Derivative(rho(theta), theta)/rho**3 - (Delta*Theta + R)*Derivative(rho(theta), theta)/(Delta*rho**3) + (Delta*Derivative(Theta(theta), theta) + Theta*Derivative(Delta(theta), theta) + Derivative(R(theta), theta))/(2*Delta*rho**2)"
-)
-
-# d_phi = expr("(R(b)+Delta*Theta(b))/(2*Delta*rho**2)").diff("b")
-# d_p_r = sp.diff(
-#     expr(
-#         "-Delta(r)/(2*rho(r)**2)*p_r**2-1/(2*rho(r)**2)*p_theta**2+((R+Delta(r)*Theta)/(2*Delta(r)*rho(r)**2))"
-#     ),
-#     "r",
-# )
-# d_p_theta = sp.diff(
-#     expr(
-#         "-Delta/(2*rho(theta)**2)*p_r**2-1/(2*rho(theta)**2)*p_theta**2+((R(theta)+Delta(theta)*Theta(theta))/(2*Delta*rho(theta)**2))"
-#     ),
-#     "theta",
-# )
 
 
 def metric_values(r, theta, phi, a):
@@ -131,102 +96,6 @@ class Observer:
         )
 
         return Ray(self.r, self.theta, self.phi, p_r, p_theta, b, q, self.a)
-
-        # # Partial derivative stuff:
-        # def _partials(sym_b, sym_r=None, sym_theta=None):
-        #     if sym_r is None and sym_theta is None:
-        #         sym_r = sym_b
-        #         sym_theta = sym_b
-
-        #     return (sym_b.diff("b"), sym_r.diff("r"), sym_theta.diff("theta"))
-
-        # partials_rho = _partials(rho)
-        # partials_Delta = _partials(Delta)
-        # partials_Sigma = _partials(
-        #     Sigma,
-        #     Sigma.subs("Delta", "Delta(r)"),
-        #     Sigma,
-        # )
-
-        # partials_alpha = _partials(
-        #     alpha,
-        #     alpha.subs({"rho": "rho(r)", "Delta": "Delta(r)", "Sigma": "Sigma(r)"}),
-        #     alpha.subs({"rho": "rho(theta)", "Sigma": "Sigma(theta)"}),
-        # )
-
-        # partials_P = _partials(P)
-        # partials_R = _partials(
-        #     R.subs({"P": "P(b)"}),
-        #     R.subs({"Delta": "Delta(r)"}),
-        #     R,
-        # )
-        # partials_Theta = _partials(Theta)
-
-
-# partial_derivative_expressions = {
-#     "rho": (
-#         expr("0"),
-#         expr("r / sqrt(a**2 * cos(theta) + r**2)"),
-#         expr("-(a**2) * sin(theta) / (2 * sqrt(a**2 * cos(theta) + r**2))"),
-#     ),
-#     "Delta": (expr("0"), expr("2 * r - 2"), expr("0")),
-#     "Sigma": (
-#         expr("0"),
-#         expr(
-#             """
-#             (
-#                 -(a**2) * sin(theta) ** 2 * Derivative(Delta(r), r) / 2
-#                 + 2 * r * (a**2 + r**2)
-#             )
-#             / sqrt(-(a**2) * Delta(r) * sin(theta) ** 2 + (a**2 + r**2) ** 2)
-#             """
-#         ),
-#         expr(
-#             """
-#             -Delta
-#             * a**2
-#             * sin(theta)
-#             * cos(theta)
-#             / sqrt(-Delta * a**2 * sin(theta) ** 2 + (a**2 + r**2) ** 2)
-#             """
-#         ),
-#     ),
-#     "alpha": (
-#         expr("0"),
-#         expr(
-#             """
-#             sqrt(Delta(r)) * Derivative(rho(r), r) / Sigma(r)
-#             - sqrt(Delta(r)) * rho(r) * Derivative(Sigma(r), r) / Sigma(r) ** 2
-#             + rho(r) * Derivative(Delta(r), r) / (2 * sqrt(Delta(r)) * Sigma(r))
-#             """
-#         ),
-#         expr(
-#             """
-#             sqrt(Delta) * Derivative(rho(theta), theta) / Sigma(theta)
-#             - sqrt(Delta)
-#             * rho(theta)
-#             * Derivative(Sigma(theta), theta)
-#             / Sigma(theta) ** 2
-#             """
-#         ),
-#     ),
-#     "P": (expr("-a"), expr("2 * r"), expr("0")),
-#     "R": (
-#         expr("-Delta * (-2 * a + 2 * b) + 2 * P(b) * Derivative(P(b), b)"),
-#         expr("-(q + (-a + b) ** 2) * Derivative(Delta(r), r)"),
-#         expr("0"),
-#     ),
-#     "Theta": (
-#         expr("-2 * b * cos(theta) ** 2 / sin(theta) ** 2"),
-#         expr("0"),
-#         expr(
-#             """
-#             2 * b**2 * cos(theta) ** 3 / sin(theta) ** 3
-#             + 2 * (-(a**2) + b**2 / sin(theta) ** 2) * sin(theta) * cos(theta)
-#             """
-#         ),
-#     ),
-# }
 
 
 class Ray:
@@ -352,19 +221,6 @@ class Ray:
             h * self.eval(d_p_theta.subs(self.partials_theta)),
         )
 
-        # print(deltas)
-
-        # for a, b, c in zip(
-        #     self.partials_b.items(),
-        #     self.partials_r.items(),
-        #     self.partials_theta.items(),
-        # ):
-        #     print(a)
-        #     print(b)
-        #     print(c)
-
-        # print(self)
-        # quit()
         self.r = (self.r + deltas[0]).evalf()
         self.theta = (self.theta + deltas[1]).evalf()
         self.phi = (self.phi + deltas[2]).evalf()
