@@ -5,7 +5,7 @@ from math import sqrt, cos, sin
 
 
 def metric_values(r, theta, phi, a):
-    rho = sqrt(r**2 + a**2 * cos(theta))
+    rho = sqrt(r**2 + a**2 * cos(theta) ** 2)
     Delta = r**2 - 2 * r + a**2
     Sigma = sqrt((r**2 + a**2) ** 2 - a**2 * Delta * sin(theta) ** 2)
     alpha = rho * sqrt(Delta) / Sigma

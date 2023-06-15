@@ -27,6 +27,8 @@ class Observer:
         Omega = 1 / (a + r**1.5)
         self.beta = omega_bar / alpha * (Omega - omega)
 
+        print(self.metric_values, (B_r, B_theta, B_phi), self.beta)
+
     def fido_ray(self, x, y, z):
         (
             r,
@@ -178,34 +180,29 @@ class Ray:
 ax = plt.figure().add_subplot(projection="3d")
 
 
-observer = Observer(4, pi / 2, 0, 0.99, 0.0, 0.0, 1.0)
+observer = Observer(100.0, pi / 2, 0, 0.0, 0.0, 0.0, 1.0)
 
 
-for theta in np.linspace(-pi / 2, pi / 2, 3, endpoint=False):
-    for phi in np.linspace(0, 2 * pi, 6, endpoint=False):
-        x, y, z = sin(theta) * cos(phi), sin(phi), cos(theta) * cos(phi)
-        ray = observer.fido_ray(x, y, z)
-        data = ([], [], [])
-        for i in range(10000):
-            try:
-                ray.euler_step(0.005)
-            except:
-                break
-            _r = ray.r
-            _theta = ray.theta
-            _phi = ray.phi
+# for theta in np.linspace(-pi / 2, pi / 2, 3, endpoint=False):
+#     for phi in np.linspace(0, 2 * pi, 6, endpoint=False):
+x, y, z = -1.0, 0.0, 0.0
+ray = observer.fido_ray(x, y, z)
+data = ([], [], [])
+for i in range(10000):
+    try:
+        ray.euler_step(0.05)
+    except:
+        break
+    _r = ray.r
+    _theta = ray.theta
+    _phi = ray.phi
 
-            data[0].append(sqrt(_r**2 + ray.a**2) * sin(_theta) * cos(_phi))
-            data[1].append(sqrt(_r**2 + ray.a**2) * sin(_theta) * sin(_phi))
-            data[2].append(_r * cos(_theta))
+    data[0].append(sqrt(_r**2 + ray.a**2) * sin(_theta) * cos(_phi))
+    data[1].append(sqrt(_r**2 + ray.a**2) * sin(_theta) * sin(_phi))
+    data[2].append(_r * cos(_theta))
 
-        ax.plot(
-            *data,
-            "r" if y > 0 else "b",
-            label="parametric curve",
-            linewidth=1,
-            alpha=0.4
-        )
+ax.plot(*data, label="parametric curve", linewidth=1, alpha=0.4)
+# ax.plot(*data, "r" if y > 0 else "b", label="parametric curve", linewidth=1, alpha=0.4)
 
 ax.axes.set_xlim3d(left=-5.0, right=5)
 ax.axes.set_ylim3d(bottom=-5.0, top=5)
