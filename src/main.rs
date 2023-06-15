@@ -1,6 +1,7 @@
 use bevy::{core_pipeline::bloom::BloomSettings, prelude::*, render::camera::CameraRenderGraph};
 use character::CharacterEntity;
 use render_pipeline::MainPassSettings;
+use test;
 
 mod character;
 mod render_pipeline;
