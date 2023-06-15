@@ -84,31 +84,39 @@ fn surface(point: vec3<f32>) -> vec3<f32> {
 }
 
 
-fn disk_sample(point: vec3<f32>, t_offset: f32) -> vec3<f32> {
+fn disk_sample(r: f32, phi: f32, t_offset: f32) -> vec3<f32> {
     let fract_t = fract(-uniforms.time * 0.05 + t_offset);
-    let radius = dot(point, point);
-    let cos_t = cos(1000.0 * fract_t / radius);
-    let sin_t = sin(1000.0 * fract_t / radius);
-    let rotation = mat3x3(cos_t, 0.0, - sin_t, 0.0, 0.0, 0.0, sin_t, 0.0, cos_t);
-    let p = point * rotation ;
+    let radius = r;
+    let rotation = phi + 1000.0 * fract_t / radius;
+    let p = vec3(sin(rotation), 0.0, cos(rotation)) * r;
 
-
-    let r = length(point) * 1.0 + 0.02 * radius * fbm(vec3(p + vec3(0.0, uniforms.time + fract_t / radius, 0.0)));
+    let r = r * 1.0 + 0.02 * radius * fbm(vec3(p + vec3(0.0, uniforms.time + fract_t / radius, 0.0)));
     let color = pow(1.0 - 1.0 / r, 2.0) * BlackBodyRadiation(1.0e4 * pow(sqrt(radius), -0.75)) / 255.0;
     let density = 10.0 * pow(fbm(vec3(r) + uniforms.time * 0.01 + 1000.0 * t_offset), 1.25) * fbm(p);
     return color.rgb * color.a * density * (1.0 - abs(1.0 - 2.0 * fract_t));
 }
 
-fn disk(point: vec3<f32>) -> vec3<f32> {
+fn disk(r: f32, theta: f32) -> vec3<f32> {
     if uniforms.disk_mode == 1u {
-        return disk_sample(point, 0.0) + disk_sample(point, 1.0 / 3.0) + disk_sample(point, 2.0 / 3.0);
+        return disk_sample(r, theta, 0.0) + disk_sample(r, theta, 1.0 / 3.0) + disk_sample(r, theta, 2.0 / 3.0);
     } else if uniforms.disk_mode == 2u {
 
-        return vec3(0.75) * mix(vec3(0.8, 0.2, 0.2), vec3(0.2, 0.2, 0.2), checker(point, 1.0));
+        return vec3(0.75) * mix(vec3(0.8, 0.2, 0.2), vec3(0.2, 0.2, 0.2), checker(vec3(r, theta, 0.0), 1.0));
     } else {
         return vec3(0.0);
     }
 }
+
+// fn disk(point: vec3<f32>) -> vec3<f32> {
+//     if uniforms.disk_mode == 1u {
+//         return disk_sample(point, 0.0) + disk_sample(point, 1.0 / 3.0) + disk_sample(point, 2.0 / 3.0);
+//     } else if uniforms.disk_mode == 2u {
+
+//         return vec3(0.75) * mix(vec3(0.8, 0.2, 0.2), vec3(0.2, 0.2, 0.2), checker(point, 1.0));
+//     } else {
+//         return vec3(0.0);
+//     }
+// }
 
 fn integrand(ray: Ray, h2: f32) -> Ray {
     return Ray(
@@ -169,19 +177,19 @@ fn derivatives(
     theta: f32,
     phi: f32,
     a: f32,
-    rho: f32,
-    Delta: f32,
-    Sigma: f32,
-    alpha: f32,
-    omega: f32,
-    omega_bar: f32,
+    // rho: f32,
+    // Delta: f32,
+    // Sigma: f32,
+    // alpha: f32,
+    // omega: f32,
+    // omega_bar: f32,
     p_r: f32,
     p_theta: f32,
     b: f32,
     q: f32,
-    P: f32,
-    R: f32,
-    Theta: f32,
+    // P: f32,
+    // R: f32,
+    // Theta: f32,
 ) -> State {
 
     let x0_0: f32 = a * a;
@@ -394,25 +402,27 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
     let theta_0 = theta;
 
     var dstate: State;
+    var color = vec3(0.0);
+
     for (var i = 0; i < uniforms.step_count; i += 1) {
         let k1 = derivatives(
             r,
             theta,
             phi,
             a,
-            rho,
-            Delta,
-            Sigma,
-            alpha,
-            omega,
-            omega_bar,
+            // rho,
+            // Delta,
+            // Sigma,
+            // alpha,
+            // omega,
+            // omega_bar,
             p_r,
             p_theta,
             b,
             q,
-            P,
-            R,
-            Theta
+            // P,
+            // R,
+            // Theta
         );
 
         let coarse = State(
@@ -424,105 +434,45 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
         );
 
 
-        r = r - 0.5 * h * k1.r;
-        theta = theta - 0.5 * h * k1.theta;
-        phi = phi - 0.5 * h * k1.phi;
-        p_r = p_r - 0.5 * h * k1.p_r;
-        p_theta = p_theta - 0.5 * h * k1.p_theta;
+        let mid_r = r - 0.5 * h * k1.r;
+        let mid_theta = theta - 0.5 * h * k1.theta;
+        let mid_phi = phi - 0.5 * h * k1.phi;
+        let mid_p_r = p_r - 0.5 * h * k1.p_r;
+        let mid_p_theta = p_theta - 0.5 * h * k1.p_theta;
 
-        metric_values(
-            r,
-            theta,
-            phi,
-            a,
-            &rho,
-            &Delta,
-            &Sigma,
-            &alpha,
-            &omega,
-            &omega_bar,
-        );
-        ray_values(
-            r,
-            theta,
-            phi,
-            a,
-            rho,
-            Delta,
-            Sigma,
-            alpha,
-            omega,
-            omega_bar,
-            b,
-            q,
-            &P,
-            &R,
-            &Theta
-        );
 
         let k2 = derivatives(
             r,
             theta,
             phi,
             a,
-            rho,
-            Delta,
-            Sigma,
-            alpha,
-            omega,
-            omega_bar,
+            // rho,
+            // Delta,
+            // Sigma,
+            // alpha,
+            // omega,
+            // omega_bar,
             p_r,
             p_theta,
             b,
-            q,
-            P,
-            R,
-            Theta
+            q
+            // P,
+            // R,
+            // Theta
         );
-
-        r = r - 0.5 * h * k2.r;
-        theta = theta - 0.5 * h * k2.theta;
-        phi = phi - 0.5 * h * k2.phi;
-        p_r = p_r - 0.5 * h * k2.p_r;
-        p_theta = p_theta - 0.5 * h * k2.p_theta;
 
         let fine = State(
-            r,
-            theta,
-            phi,
-            p_r,
-            p_theta,
+            r - 0.5 * h * k2.r,
+            theta - 0.5 * h * k2.theta,
+            phi - 0.5 * h * k2.phi,
+            p_r - 0.5 * h * k2.p_r,
+            p_theta - 0.5 * h * k2.p_theta,
         );
-
-        metric_values(
-            r,
-            theta,
-            phi,
-            a,
-            &rho,
-            &Delta,
-            &Sigma,
-            &alpha,
-            &omega,
-            &omega_bar,
-        );
-        ray_values(
-            r,
-            theta,
-            phi,
-            a,
-            rho,
-            Delta,
-            Sigma,
-            alpha,
-            omega,
-            omega_bar,
-            b,
-            q,
-            &P,
-            &R,
-            &Theta
-        );
+// r,
+// theta,
+// phi,
+// p_r,
+// p_theta,
 
         let error_state = State(
             coarse.r - fine.r,
@@ -538,7 +488,34 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
 
         let y = sqrt(dot(ray.pos, ray.pos) + dot(ray.dir, ray.dir));
         h = min(h * clamp(sqrt(max(abs_tol, abs(y) * rel_tol) / abs(error)), 0.3, 2.0), max_step);
+
+        if (fine.theta * theta) <= 0.0 {
+            // Approximate hit location
+            // let t = -ray.pos.y / (ray_fine.pos.y - ray.pos.y);
+            // let hit_ray = Ray(
+            //     mix(ray.pos, ray_fine.pos, t) * vec3(1.0, 0.0, 1.0),
+            //     mix(ray.dir, ray_fine.dir, t)
+            // );
+
+            color += disk(
+                r,
+                phi
+            );
+
+            // Check for disk intersection
+            // let hit_distance = dot(hit_ray.pos, hit_ray.pos);
+            // if hit_distance >= disk_start * disk_start && hit_distance < disk_end * disk_end {
+            //     color += disk(hit_ray.pos);
+            // }
+        }
+
+        r = fine.r;
+        theta = fine.theta;
+        phi = fine.phi;
+        p_r = fine.p_r;
+        p_theta = fine.p_theta;
     }
+
 
     // let h_vec = cross(ray.pos, ray.dir);
     // let h2 = dot(h_vec, h_vec);
@@ -662,40 +639,48 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
         theta,
         phi,
         a,
-        rho,
-        Delta,
-        Sigma,
-        alpha,
-        omega,
-        omega_bar,
+            // rho,
+            // Delta,
+            // Sigma,
+            // alpha,
+            // omega,
+            // omega_bar,
         p_r,
         p_theta,
         b,
         q,
-        P,
-        R,
-        Theta
+            // P,
+            // R,
+            // Theta
     );
 
     let r_hat = spherical_to_dir(theta, phi);
-    let phi_hat = normalize(cross(vec3(0.0, 1.0, 0.0), r_hat)) ;
+    let phi_hat = normalize(cross(vec3(0.0, 1.0, 1.0), r_hat)) ;
     let theta_hat = normalize(cross(phi_hat, r_hat)) ;
 
 
 
     let f = select(1.0, 0.0, length(r_hat) == 0.0);
 
-    let dir = r_hat * _d.r + phi_hat * _d.phi / r + theta_hat * _d.theta / r;
-    // output_colour = vec3(_d.r, _d.phi, _d.theta);
+    let dir = r_hat * _d.r + r * theta_hat * _d.theta + 1.0 * r * phi_hat * _d.phi;
+
+    // let dir = normalize(
+    //     (r + _d.r) * spherical_to_dir(theta + _d.theta, phi + _d.phi) - r * spherical_to_dir(theta, phi)
+    // );
+    
+
+    // // output_colour = vec3(_d.r, _d.phi, _d.theta);
     output_colour = vec3(checker(
         // length(dir),
-        spherical_to_dir(theta, phi),
-        1.0
+        dir,
+        // spherical_to_dir(theta, phi),
+        5.0
     ) * select(
         vec3(1.0, 0.0, 0.0),
         vec3(0.0, 0.0, 1.0),
-        r > 2.0
+        r > 25.0
     ));
-    output_colour.y = vec3(checker(dir, 1.0)).y;
+    // output_colour = dir;
+    // output_colour.y = vec3(checker(dir, 5.0)).y;
     return vec4<f32>(output_colour, 1.0);
 }

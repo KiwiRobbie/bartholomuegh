@@ -152,14 +152,15 @@ fn prepare_uniforms(
 
         let transform = Transform::from_matrix(view);
 
-        let r = transform.translation.length();
+        let r = (transform.translation * Vec3::new(1.0, 0.0, 1.0)).length();
+
         let theta: f32 = PI / 2.0;
         let phi: f32 = f32::atan2(transform.translation.x, transform.translation.y);
         let a = settings.max_step;
 
         let Omega: f32 = 1.0 / (a + r.powf(3.0 / 2.0));
 
-        omega_bar(r, theta, a) / alpha(r, theta, a) * (Omega - omega(a, r, theta));
+        let beta = omega_bar(r, theta, a) / alpha(r, theta, a) * (Omega - omega(a, r, theta));
 
         let uniforms = TraceUniforms {
             camera,
@@ -181,20 +182,33 @@ fn prepare_uniforms(
             disk_start: settings.disk_start,
             disk_end: settings.disk_end,
 
-            r: (transform.translation * Vec3::new(1.0, 0.0, 1.0)).length(),
-            theta: 1.5707963267948966,
-            phi: phi,
+            r,
+            theta,
+            phi,
             a: settings.max_step,
-            rho: 4.0,
-            Delta: 8.9801,
-            Sigma: 16.71892341031563,
-            alpha: 0.7169556135594313,
-            omega: 0.02833404406945562,
-            omega_bar: 4.179730852578907,
+            rho: rho(r, theta, a),
+            Delta: delta(r, a),
+            Sigma: ((r * r + a * a).powi(2) - a * a * delta(r, a) * theta.sin().powi(2)).sqrt(),
+            alpha: alpha(r, theta, a),
+            omega: omega(a, r, theta),
+            omega_bar: omega_bar(r, theta, a),
             B_r: 0.0,
             B_theta: 0.0,
             B_phi: 1.0,
-            beta: 0.4832969358080979,
+            beta: beta,
+            // theta: 1.5707963267948966,
+            // phi: phi,
+            // a: settings.max_step,
+            // rho: 4.0,
+            // Delta: 8.9801,
+            // Sigma: 16.71892341031563,
+            // alpha: 0.7169556135594313,
+            // omega: 0.02833404406945562,
+            // omega_bar: 4.179730852578907,
+            // B_r: 0.0,
+            // B_theta: 0.0,
+            // B_phi: 1.0,
+            // beta: 0.4832969358080979,
         };
 
         let mut uniform_buffer = UniformBuffer::from(uniforms);
