@@ -184,19 +184,10 @@ fn derivatives(
     theta: f32,
     phi: f32,
     a: f32,
-    // rho: f32,
-    // Delta: f32,
-    // Sigma: f32,
-    // alpha: f32,
-    // omega: f32,
-    // omega_bar: f32,
     p_r: f32,
     p_theta: f32,
     b: f32,
     q: f32,
-    // P: f32,
-    // R: f32,
-    // Theta: f32,
 ) -> State {
 
     let x0_0: f32 = a * a;
@@ -255,25 +246,6 @@ fn derivatives(
         o3,
         o4
     );
-
-
-    // // Prartial Derivatives
-    // let drho_r = r / sqrt(a * a * cos(theta) + r * r);
-    // let drho_theta = -(a * a) * sin(theta) / (2.0 * sqrt(a * a * cos(theta) + r * r));
-    // let dDelta_r = 2.0 * r - 2.0;
-    // let dP_b = -a;
-    // let dR_b = -Delta * (-2.0 * a + 2.0 * b) + 2.0 * P * dP_b;
-    // let dTheta_b = -2.0 * b * cos(theta) * cos(theta) / (sin(theta) * sin(theta));
-    // let dTheta_theta = 2.0 * b * b * pow(cos(theta) / sin(theta), 3.0) + 2.0 * (-(a * a) + b * b / (sin(theta) * sin(theta))) * sin(theta) * cos(theta);
-
-    // // State Derivatives
-    // return State(
-    //     Delta / rho * rho * p_r,
-    //     1.0 / (rho * rho) * p_theta,
-    //     (Delta * dTheta_b + dR_b) / (2.0 * Delta * rho * rho),
-    //     (Theta * dDelta_r / (2.0 * Delta * rho * rho) + p_r * p_r * Delta * drho_r / (rho * rho * rho) - p_r * p_r * dDelta_r / (2.0 * rho * rho) + p_theta * p_theta * drho_r / (rho * rho * rho) - (R + Theta * Delta) * drho_r / (Delta * rho * rho * rho) - (R + Theta * Delta) * dDelta_r / (2.0 * Delta * Delta * rho * rho)),
-    //     (Delta * p_r * p_r * drho_theta / (rho * rho * rho) + p_theta * p_theta * drho_theta / (rho * rho * rho) - (Delta * Theta + R) * drho_theta / (Delta * rho * rho * rho) + (Delta * dTheta_theta) / (2.0 * Delta * rho * rho)),
-    // );
 }
 
 
@@ -282,9 +254,6 @@ fn spherical_to_dir(theta: f32, phi: f32) -> vec3<f32> {
         sin(theta) * cos(phi),
         sin(theta) * sin(phi),
         cos(theta)
-        // cos(phi) * cos(theta),
-        // sin(phi),
-        // cos(phi) * sin(theta)
     );
 }
 
@@ -300,10 +269,6 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
 
     var ray = get_camera(clip_space);
     
-
-
-
-
     // // Observer 
     var r: f32 = uniforms.r;
     var theta: f32 = uniforms.theta;
@@ -319,25 +284,6 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
     let B_theta: f32 = uniforms.B_theta;
     let B_phi: f32 = uniforms.B_phi;
     let beta: f32 = uniforms.beta;
-
-
-    // var r: f32 = 4.0;
-    // var theta: f32 = 1.5707963267948966;
-    // var phi: f32 = uniforms.time;
-    // var a: f32 = uniforms.max_step;
-    // var rho: f32 = 4.0;
-    // var Delta: f32 = 8.0;
-    // var Sigma: f32 = 16.0;
-    // var alpha: f32 = 0.7071067811865476;
-    // var omega: f32 = 0.0;
-    // var omega_bar: f32 = 4.0;
-    // let B_r: f32 = 0.0;
-    // let B_theta: f32 = 0.0;
-    // let B_phi: f32 = 1.0;
-    // let beta: f32 = 0.7071067811865475;
-    // (4.0, 1.5707963267948966, 0, 0.0, 4.0, 8.0, 16.0, 0.7071067811865476, 0.0, 4.0) (0.0, 0.0, 1.0) 0.7071067811865475
-
-
 
     // Camera ray
     let n: vec3<f32> = normalize(vec3(
@@ -580,41 +526,21 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
         q,
     );
 
-    let r_hat = spherical_to_dir(theta, phi);
-    let phi_hat = normalize(cross(vec3(0.0, 1.0, 1.0), r_hat)) ;
-    let theta_hat = normalize(cross(phi_hat, r_hat)) ;
-
-
-
-    let f = select(1.0, 0.0, length(r_hat) == 0.0);
-
 
     let v1 = vec3(sin(theta) * cos(phi), sin(phi) * sin(theta), cos(theta)) * _d.r;
     let v2 = vec3(r * cos(phi) * cos(theta), r * sin(phi) * cos(theta), -r * sin(theta)) * _d.theta;
     let v3 = vec3(-r * sin(phi) * sin(theta), r * sin(theta) * cos(phi), 0.0) * _d.phi;
-
-
-
     let dir = normalize(v1 + v2 + v3);
 
-    // let dir = normalize(r_hat * _d.r + r * theta_hat * _d.theta + 1.0 * r * phi_hat * _d.phi);
-
-    // let dir = normalize(
-    //     (r + _d.r) * spherical_to_dir(theta + _d.theta, phi + _d.phi) - r * spherical_to_dir(theta, phi)
-    // );
-    
-
-    // // output_colour = vec3(_d.r, _d.phi, _d.theta);
     output_colour = vec3(checker(
-        // length(dir),
         dir,
-        // spherical_to_dir(theta, phi),
         5.0
     ) * select(
         vec3(1.0, 0.0, 0.0),
         vec3(0.0, 0.0, 1.0),
         r > 500.0
     ));
+
     // output_colour = dir;
     // output_colour.y = vec3(checker(dir, 5.0)).y;
     // output_colour = skybox(dir);
