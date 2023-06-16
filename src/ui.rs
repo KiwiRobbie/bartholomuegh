@@ -111,8 +111,6 @@ fn ui_system(
                         CollapsingHeader::new("Misc")
                             .default_open(true)
                             .show(ui, |ui| {
-                                ui.checkbox(&mut trace_settings.misc_bool, "Misc");
-
                                 if let Some(bloom_settings) = bloom_settings {
                                     ui.add(
                                         Slider::new(
@@ -157,6 +155,16 @@ fn ui_system(
                                         }
                                     }
                                 }
+
+                                ui.add(
+                                    Slider::new(
+                                        &mut trace_settings.reletavistic_scale,
+                                        0.0..=1.0,
+                                    )
+                                    .text("Scale"),
+                                );
+
+                                ui.checkbox(&mut trace_settings.misc_bool, "Misc");
                             });
 
                         CollapsingHeader::new("Transform")

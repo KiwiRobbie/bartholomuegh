@@ -3,10 +3,10 @@
 struct MainPassUniforms {
     camera: mat4x4<f32>,
     camera_inverse: mat4x4<f32>,
+    velocity: vec3<f32>,
     time: f32,
     surface_bool: u32,
     disk_mode: u32, 
-    misc_bool: u32,
     step_count: i32,
     initial_step: f32,
     abs_error: f32,
@@ -15,6 +15,8 @@ struct MainPassUniforms {
     method: u32,
     disk_start: f32,
     disk_end: f32,
+    misc_float: f32,
+    misc_bool: u32,
 };
 
 @group(0) @binding(0)
@@ -42,7 +44,6 @@ fn fbm(v: vec3<f32>) -> f32 {
 }
 
 fn skybox(dir: vec3<f32>) -> vec3<f32> {
-
     let color = BlackBodyRadiation(1000.0 + pow(10.0, 4.0 * noise(200.0 * dir)));
     let brightness = pow(
         noise(100.0 * dir) * noise(200.0 * dir) * noise(400.0 * dir),
@@ -116,6 +117,13 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
     var output_colour = vec3(0.0);
 
     var ray = get_camera(clip_space);
+    let velocity = uniforms.velocity;
+    if (any(velocity != vec3(0.0))) {
+        let cos_angle = dot(ray.dir, normalize(velocity));
+        let new_angle = acos((cos_angle - length(velocity)) / (1.0 - length(velocity) * cos_angle));
+        let orth = normalize(ray.dir - normalize(velocity) * dot(ray.dir, normalize(velocity)));
+        ray.dir = cos(new_angle) * normalize(velocity) + sin(new_angle) * orth;
+    }
 
     let h_vec = cross(ray.pos, ray.dir);
     let h2 = dot(h_vec, h_vec);

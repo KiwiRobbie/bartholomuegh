@@ -1,3 +1,4 @@
+use crate::render_pipeline::MainPassSettings;
 use bevy::{
     input::mouse::{MouseMotion, MouseWheel},
     prelude::*,
@@ -53,7 +54,7 @@ fn toggle_grab_cursor(window: &mut Window) {
 }
 
 fn update_character(
-    mut character: Query<(&mut Transform, &mut CharacterEntity)>,
+    mut character: Query<(&mut Transform, &mut CharacterEntity, &mut MainPassSettings)>, // MainPassSettings shouldln't be here
     keys: Res<Input<KeyCode>>,
     mut mouse_motion_events: EventReader<MouseMotion>,
     time: Res<Time>,
@@ -65,7 +66,7 @@ fn update_character(
         toggle_grab_cursor(&mut window);
     }
 
-    let (mut transform, mut character) = character.single_mut();
+    let (mut transform, mut character, mut settings) = character.single_mut();
     let target_velocity;
     if window.cursor.grab_mode == CursorGrabMode::Locked {
         // speed
@@ -131,9 +132,9 @@ fn update_character(
     }
 
     let acceleration: f32 = if character.in_spectator {
-        0.2
+        0.03
     } else if character.grounded {
-        0.2
+        0.03
     } else {
         0.01
     };
@@ -153,6 +154,8 @@ fn update_character(
     );
 
     transform.translation += character.velocity * time.delta_seconds();
+
+    settings.velocity = character.velocity * settings.reletavistic_scale / character.speed;
 }
 
 fn lerp(i: Vec3, f: Vec3, s: f32, dt: f32) -> Vec3 {

@@ -43,7 +43,6 @@ pub struct MainPassSettings {
     pub surface_bool: bool,
     pub disk_bool: bool,
     pub disk_hide: bool,
-    pub misc_bool: bool,
     pub step_count: i32,
     pub rel_error: f32,
     pub abs_error: f32,
@@ -52,6 +51,10 @@ pub struct MainPassSettings {
     pub method: IntegrationMethod,
     pub disk_start: f32,
     pub disk_end: f32,
+    pub velocity: Vec3,
+    pub reletavistic_scale: f32,
+    pub misc_float: f32,
+    pub misc_bool: bool,
 }
 
 impl Default for MainPassSettings {
@@ -60,7 +63,6 @@ impl Default for MainPassSettings {
             surface_bool: false,
             disk_bool: false,
             disk_hide: false,
-            misc_bool: false,
             step_count: 128,
             rel_error: 1.0E-5,
             abs_error: 1.0E-5,
@@ -69,6 +71,10 @@ impl Default for MainPassSettings {
             method: IntegrationMethod::Rk4,
             disk_start: 1.0,
             disk_end: 100.0,
+            velocity: Vec3::ZERO,
+            reletavistic_scale: 0.15,
+            misc_float: 0.0,
+            misc_bool: false,
         }
     }
 }
@@ -77,10 +83,10 @@ impl Default for MainPassSettings {
 pub struct TraceUniforms {
     pub camera: Mat4,
     pub camera_inverse: Mat4,
+    pub velocity: Vec3,
     pub time: f32,
     pub surface_bool: u32,
     pub disk_mode: u32,
-    pub misc_bool: u32,
     pub step_count: i32,
     pub rel_error: f32,
     pub abs_error: f32,
@@ -89,6 +95,8 @@ pub struct TraceUniforms {
     pub method: u32,
     pub disk_start: f32,
     pub disk_end: f32,
+    pub misc_float: f32,
+    pub misc_bool: u32,
 }
 
 #[derive(Component, Deref, DerefMut)]
@@ -115,11 +123,11 @@ fn prepare_uniforms(
         let uniforms = TraceUniforms {
             camera,
             camera_inverse,
+            velocity: settings.velocity,
             time: elapsed as f32,
             surface_bool: settings.surface_bool as u32,
             disk_mode: (!settings.disk_hide) as u32
                 + (!settings.disk_hide && settings.disk_bool) as u32,
-            misc_bool: settings.misc_bool as u32,
             step_count: settings.step_count,
             rel_error: settings.rel_error,
             abs_error: settings.abs_error,
@@ -131,6 +139,8 @@ fn prepare_uniforms(
             },
             disk_start: settings.disk_start,
             disk_end: settings.disk_end,
+            misc_float: settings.misc_float,
+            misc_bool: settings.misc_bool as u32,
         };
 
         let mut uniform_buffer = UniformBuffer::from(uniforms);
