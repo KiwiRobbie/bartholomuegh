@@ -58,12 +58,12 @@ fn ui_system(
                                         .logarithmic(true),
                                 );
                                 ui.add(
-                                    Slider::new(&mut trace_settings.rel_error, 0.000001..=0.1)
+                                    Slider::new(&mut trace_settings.rel_error, 0.00000001..=0.1)
                                         .text("Relative Error Tolerance")
                                         .logarithmic(true),
                                 );
                                 ui.add(
-                                    Slider::new(&mut trace_settings.abs_error, 0.000001..=0.1)
+                                    Slider::new(&mut trace_settings.abs_error, 0.00000001..=0.1)
                                         .text("Absolute Error Tolerance")
                                         .logarithmic(true),
                                 );
