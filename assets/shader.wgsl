@@ -3,16 +3,23 @@
 struct MainPassUniforms {
     camera: mat4x4<f32>,
     camera_inverse: mat4x4<f32>,
+
     time: f32,
+
     surface_bool: u32,
     disk_mode: u32, 
     misc_bool: u32,
+
     step_count: i32,
     initial_step: f32,
+
     abs_error: f32,
     rel_error: f32,
+
     max_step: f32,
+
     method: u32,
+
     disk_start: f32,
     disk_end: f32,
 
@@ -272,9 +279,12 @@ fn derivatives(
 
 fn spherical_to_dir(theta: f32, phi: f32) -> vec3<f32> {
     return vec3(
-        cos(phi) * cos(theta),
-        sin(phi),
-        cos(phi) * sin(theta)
+        sin(theta) * cos(phi),
+        sin(theta) * sin(phi),
+        cos(theta)
+        // cos(phi) * cos(theta),
+        // sin(phi),
+        // cos(phi) * sin(theta)
     );
 }
 
@@ -298,7 +308,7 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
     var r: f32 = uniforms.r;
     var theta: f32 = uniforms.theta;
     var phi: f32 = uniforms.phi;
-    var a: f32 = uniforms.disk_end / 100.0;
+    var a: f32 = uniforms.a;
     var rho: f32 = uniforms.rho;
     var Delta: f32 = uniforms.Delta;
     var Sigma: f32 = uniforms.Sigma;
@@ -578,7 +588,16 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
 
     let f = select(1.0, 0.0, length(r_hat) == 0.0);
 
-    let dir = normalize(r_hat * _d.r + r * theta_hat * _d.theta + 1.0 * r * phi_hat * _d.phi);
+
+    let v1 = vec3(sin(theta) * cos(phi), sin(phi) * sin(theta), cos(theta)) * _d.r;
+    let v2 = vec3(r * cos(phi) * cos(theta), r * sin(phi) * cos(theta), -r * sin(theta)) * _d.theta;
+    let v3 = vec3(-r * sin(phi) * sin(theta), r * sin(theta) * cos(phi), 0.0) * _d.phi;
+
+
+
+    let dir = normalize(v1 + v2 + v3);
+
+    // let dir = normalize(r_hat * _d.r + r * theta_hat * _d.theta + 1.0 * r * phi_hat * _d.phi);
 
     // let dir = normalize(
     //     (r + _d.r) * spherical_to_dir(theta + _d.theta, phi + _d.phi) - r * spherical_to_dir(theta, phi)
@@ -598,6 +617,6 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
     ));
     // output_colour = dir;
     // output_colour.y = vec3(checker(dir, 5.0)).y;
-    output_colour = skybox(dir);
+    // output_colour = skybox(dir);
     return vec4<f32>(output_colour, 1.0);
 }

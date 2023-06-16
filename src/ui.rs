@@ -106,6 +106,11 @@ fn ui_system(
                                         .text("Outer Radius")
                                         .logarithmic(true),
                                 );
+                                ui.add(
+                                    Slider::new(&mut trace_settings.spin, 0.0..=1.0)
+                                        .text("Spin")
+                                        .logarithmic(true),
+                                );
                             });
 
                         CollapsingHeader::new("Misc")

@@ -54,6 +54,7 @@ pub struct MainPassSettings {
     pub method: IntegrationMethod,
     pub disk_start: f32,
     pub disk_end: f32,
+    pub spin: f32,
 }
 
 impl Default for MainPassSettings {
@@ -71,6 +72,7 @@ impl Default for MainPassSettings {
             method: IntegrationMethod::Rk4,
             disk_start: 1.0,
             disk_end: 100.0,
+            spin: 0.0,
         }
     }
 }
@@ -79,16 +81,23 @@ impl Default for MainPassSettings {
 pub struct TraceUniforms {
     pub camera: Mat4,
     pub camera_inverse: Mat4,
+
     pub time: f32,
+
     pub surface_bool: u32,
     pub disk_mode: u32,
     pub misc_bool: u32,
+
     pub step_count: i32,
     pub initial_step: f32,
-    pub rel_error: f32,
+
     pub abs_error: f32,
+    pub rel_error: f32,
+
     pub max_step: f32,
+
     pub method: u32,
+
     pub disk_start: f32,
     pub disk_end: f32,
 
@@ -148,9 +157,9 @@ fn prepare_uniforms(
 
         let transform = Transform::from_matrix(view);
 
-        let r = Vec3::new(transform.translation.x, 0.0, transform.translation.z).length();
+        let r = transform.translation.x; //Vec3::new(transform.translation.x, 0.0, transform.translation.z).length();
         let theta: f32 = PI / 2.0;
-        let phi: f32 = f32::atan2(transform.translation.x, transform.translation.z);
+        let phi: f32 = transform.translation.y; // f32::atan2(transform.translation.x, transform.translation.z);
         let a = 0.0;
 
         let (r, theta, phi, a, rho, Delta, Sigma, alpha, omega, omega_bar) =
@@ -164,33 +173,43 @@ fn prepare_uniforms(
         let uniforms = TraceUniforms {
             camera,
             camera_inverse,
+
             time: elapsed as f32,
+
             surface_bool: settings.surface_bool as u32,
             disk_mode: (!settings.disk_hide) as u32
                 + (!settings.disk_hide && settings.disk_bool) as u32,
             misc_bool: settings.misc_bool as u32,
+
             step_count: settings.step_count,
+
             initial_step: settings.initial_step,
+
             rel_error: settings.rel_error,
             abs_error: settings.abs_error,
+
             max_step: settings.max_step,
+
             method: match settings.method {
                 IntegrationMethod::Rk4 => 0,
                 IntegrationMethod::Euler => 1,
             },
+
             disk_start: settings.disk_start,
             disk_end: settings.disk_end,
 
             r,
             theta,
             phi,
-            a: settings.max_step,
+            a: settings.spin,
+
             rho,
             Delta,
             Sigma,
             alpha,
             omega,
             omega_bar,
+
             B_r: B.x,
             B_theta: B.y,
             B_phi: B.z,
