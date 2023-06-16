@@ -93,14 +93,14 @@ fn surface(point: vec3<f32>) -> vec3<f32> {
 
 fn disk_sample(r: f32, phi: f32, t_offset: f32) -> vec3<f32> {
     let fract_t = fract(-uniforms.time * 0.05 + t_offset);
-    let radius = r;
+    let radius = r * 100.0 / uniforms.disk_end + 2.0 ;
     let rotation = phi + 1000.0 * fract_t / radius;
     let p = vec3(sin(rotation), 0.0, cos(rotation)) * r;
 
     let r = r * 1.0 + 0.02 * radius * fbm(vec3(p + vec3(0.0, uniforms.time + fract_t / radius, 0.0)));
-    let color = pow(1.0 - 1.0 / r, 2.0) * BlackBodyRadiation(1.0e4 * pow(sqrt(radius), -0.75)) / 255.0;
+    let color = pow(1.0 - 1.0 / r, 2.0) * BlackBodyRadiation(1.55e4 * pow(sqrt(radius), -0.75)) / 255.0;
     let density = 10.0 * pow(fbm(vec3(r) + uniforms.time * 0.01 + 1000.0 * t_offset), 1.25) * fbm(p);
-    return color.rgb * color.a * density * (1.0 - abs(1.0 - 2.0 * fract_t));
+    return color.rgb * color.a * density * (1.0 - abs(1.0 - 2.0 * fract_t)) ;
 }
 
 fn disk(r: f32, theta: f32) -> vec3<f32> {
@@ -125,20 +125,15 @@ fn disk(r: f32, theta: f32) -> vec3<f32> {
 //     }
 // }
 
-fn integrand(ray: Ray, h2: f32) -> Ray {
-    return Ray(
-        ray.dir,
-        -1.5 * h2 * ray.pos / pow(dot(ray.pos, ray.pos), 2.5)
-    );
-}
-fn rk4_step(ray: Ray, h: f32, h2: f32) -> Ray {
-    let k1 = integrand(ray, h2);
-    let k2 = integrand(Ray(ray.pos + 0.5 * h * k1.pos, ray.dir + 0.5 * h * k1.dir), h2);
-    let k3 = integrand(Ray(ray.pos + 0.5 * h * k2.pos, ray.dir + 0.5 * h * k2.dir), h2);
-    let k4 = integrand(Ray(ray.pos + h * k3.pos, ray.dir + h * k3.dir), h2);
-    return Ray(
-        ray.pos + (k1.pos + 2.0 * k2.pos + 2.0 * k3.pos + k4.pos) * h / 6.0,
-        ray.dir + (k1.dir + 2.0 * k2.dir + 2.0 * k3.dir + k4.dir) * h / 6.0,
+
+fn rk4_step(ray: State, h: f32, constants: Constants) -> State {
+    let k1 = integrand(ray, constants);
+    let k2 = integrand(State(ray.x + 0.5 * h * k1.x, ray.p + 0.5 * h * k1.p), constants);
+    let k3 = integrand(State(ray.x + 0.5 * h * k2.x, ray.p + 0.5 * h * k2.p), constants);
+    let k4 = integrand(State(ray.x + h * k3.x, ray.p + h * k3.p), constants);
+    return State(
+        ray.x + (k1.x + 2.0 * k2.x + 2.0 * k3.x + k4.x) * h / 6.0,
+        ray.p + (k1.p + 2.0 * k2.p + 2.0 * k3.p + k4.p) * h / 6.0,
     );
 }
 
@@ -172,23 +167,36 @@ fn ray_values(r: f32, theta: f32, phi: f32, a: f32, rho: f32, Delta: f32, Sigma:
 
 
 struct State {
-    r: f32,
-    theta: f32,
-    phi: f32, 
-    p_r: f32,
-    p_theta: f32,
+    x: vec3<f32>,
+    p: vec2<f32>,
+    // r: f32,
+    // theta: f32,
+    // phi: f32, 
+    // p_r: f32,
+    // p_theta: f32,
 }
 
-fn derivatives(
-    r: f32,
-    theta: f32,
-    phi: f32,
+struct Constants { 
     a: f32,
-    p_r: f32,
-    p_theta: f32,
     b: f32,
-    q: f32,
+    q: f32, 
+}
+
+
+const PI = 3.141592653589793;
+
+fn integrand(
+    state: State,
+    constants: Constants,
 ) -> State {
+    let r = state.x.x;
+    let theta = state.x.y;
+    let phi = state.x.z;
+    let p_r = state.p.x;
+    let p_theta = state.p.y;
+    let b = constants.b;
+    let q = constants.q;
+    let a = constants.a;
 
     let x0_0: f32 = a * a;
     let x0_1: f32 = r * r;
@@ -240,11 +248,8 @@ fn derivatives(
 
 
     return State(
-        o0,
-        o1,
-        o2,
-        o3,
-        o4
+        -vec3(o0, o1, o2),
+        -vec2(o3, o4)
     );
 }
 
@@ -262,6 +267,16 @@ fn test(u: ptr<function, f32>) {
 }
 
 
+fn rotationMatrix(axis: vec3<f32>, angle: f32) -> mat3x3<f32> {
+    let axis = normalize(axis);
+    let  s = sin(angle);
+    let c = cos(angle);
+    let oc = 1.0 - c;
+
+    return mat3x3(oc * axis.x * axis.x + c, oc * axis.x * axis.y - axis.z * s, oc * axis.z * axis.x + axis.y * s, oc * axis.x * axis.y + axis.z * s, oc * axis.y * axis.y + c, oc * axis.y * axis.z - axis.x * s, oc * axis.z * axis.x - axis.y * s, oc * axis.y * axis.z + axis.x * s, oc * axis.z * axis.z + c);
+}
+
+
 @fragment
 fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
     let clip_space = vec2(1.0, -1.0) * (in.uv * 2.0 - 1.0);
@@ -269,6 +284,10 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
 
     var ray = get_camera(clip_space);
     
+
+
+
+
     // // Observer 
     var r: f32 = uniforms.r;
     var theta: f32 = uniforms.theta;
@@ -286,18 +305,31 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
     let beta: f32 = uniforms.beta;
 
     // Camera ray
-    let n: vec3<f32> = normalize(vec3(
-        ray.dir.x * cos(phi) - ray.dir.z * sin(phi),
-        ray.dir.x * sin(phi) + ray.dir.z * cos(phi),
-        ray.dir.y,
+    var n: vec3<f32> = normalize(vec3(
+        -ray.dir.z,
+        -ray.dir.y,
+        ray.dir.x,
     ));
+    // n = n * rotationMatrix(cross(vec3(0.0, 1.0, 0.0), ray.pos), -theta);
+    // n = n * rotationMatrix(vec3(0.0, 1.0, 0.0), phi);
+    n = n * rotationMatrix(vec3(0.0, 1.0, 0.0), -phi);
+    n = n * rotationMatrix(normalize(vec3(0.0, 0.0, 1.0)), theta + 0.5 * 3.141592653589793);
+    
+    
+    
+    // n = vec3(    
+    //     n.x * cos(theta),
+    //     n.y * sin(theta),
+    //     n.z * cos(theta) 
+    // )
+
 
     // Cartesian FIDO ray
     let quotient: f32 = 1.0 - beta * n.y;
     let nF: vec3<f32> = vec3(
         -n.x * sqrt(1.0 - beta * beta),
-        (beta - n.y),
-        -n.z * sqrt(1.0 - beta * beta)
+        (beta - n.z),
+        -n.y * sqrt(1.0 - beta * beta)
     ) / quotient;
 
 
@@ -313,88 +345,102 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
     var p_theta: f32 = E_f * rho * nF_theta;
     let p_phi: f32 = E_f * omega_bar * nF_phi;
 
+    var state = State(vec3(r, theta, phi), vec2(p_r, p_theta));
+
+
     // Constants of motion for photon
     let b = p_phi;
     let q = p_theta * p_theta + cos(theta) * cos(theta) * (b * b / (sin(theta) * sin(theta)) - a * a);
+    let constants = Constants(a, b, q);
+
 
     var h = 100.0 * uniforms.initial_step;
     let rel_tol = uniforms.rel_error;
     let abs_tol = uniforms.abs_error;
-    let max_step = uniforms.max_step;
 
 
-    var dstate: State;
+
     var color = vec3(0.0);
 
+    var fine: State;
+    var coarse: State;
+
     for (var i = 0; i < uniforms.step_count; i += 1) {
-        let k1 = derivatives(
-            r,
-            theta,
-            phi,
-            a,
-            p_r,
-            p_theta,
-            b,
-            q,
-        );
+        let max_step = uniforms.max_step * state.x.x; // Hacky but works well
 
-        let coarse = State(
-            r - h * k1.r,
-            theta - h * k1.theta,
-            phi - h * k1.phi,
-            p_r - h * k1.p_r,
-            p_theta - h * k1.p_theta,
-        );
+        if uniforms.method == 0u {
+            coarse = rk4_step(state, 2.0 * h, constants);
+            let mid = rk4_step(state, h, constants);
+            fine = rk4_step(mid, h, constants);
+        } else {
+            let k1 = integrand(
+                state,
+                constants
+            );
+
+            coarse = State(
+                state.x - h * k1.x,
+                state.p - h * k1.p,
+            );
+
+            let mid = State(
+                state.x - 0.5 * h * k1.x,
+                state.p - 0.5 * h * k1.p,
+            );
+
+            let k2 = integrand(
+                mid,
+                constants
+            );
+
+            fine = State(
+                mid.x - 0.5 * h * k2.x,
+                mid.p - 0.5 * h * k2.p,
+            );
+        }
 
 
-        let mid_r = r - 0.5 * h * k1.r;
-        let mid_theta = theta - 0.5 * h * k1.theta;
-        let mid_phi = phi - 0.5 * h * k1.phi;
-        let mid_p_r = p_r - 0.5 * h * k1.p_r;
-        let mid_p_theta = p_theta - 0.5 * h * k1.p_theta;
-
-
-        let k2 = derivatives(
-            r,
-            theta,
-            phi,
-            a,
-            p_r,
-            p_theta,
-            b,
-            q
-        );
-
-        let fine = State(
-            r - 0.5 * h * k2.r,
-            theta - 0.5 * h * k2.theta,
-            phi - 0.5 * h * k2.phi,
-            p_r - 0.5 * h * k2.p_r,
-            p_theta - 0.5 * h * k2.p_theta,
-        );
 
         let error_state = State(
-            coarse.r - fine.r,
-            coarse.theta - fine.theta,
-            coarse.phi - fine.phi,
-            coarse.p_r - fine.p_r,
-            coarse.p_r - fine.p_r,
+            fine.x - coarse.x,
+            fine.p - coarse.p
         );
 
         let error = sqrt(
-            error_state.r * error_state.r + error_state.theta * error_state.theta + error_state.phi * error_state.phi + error_state.p_r * error_state.p_r + error_state.p_r * error_state.p_r
+            dot(error_state.x, error_state.x) + dot(error_state.p, error_state.p)
         );
 
         let y = sqrt(
-            r * r + theta * theta + phi * phi + p_r * p_r + p_r * p_r
+            dot(state.x, state.x) + dot(state.p, state.p)
         );
         h = min(h * clamp(sqrt(max(abs_tol, abs(y) * rel_tol) / abs(error)), 0.3, 2.0), max_step);
 
-        r = fine.r;
-        theta = fine.theta;
-        phi = fine.phi;
-        p_r = fine.p_r;
-        p_theta = fine.p_theta;
+
+        let ct_a = cos(state.x.y) ;
+        let cb_b = cos(fine.x.y);
+
+        // Check for y-plane intersection
+        if (ct_a * cb_b) <= 0.0 {
+
+            // Approximate hit location
+            let t = -ct_a / (cb_b - ct_a);
+            let hit_state = State(
+                mix(state.x, fine.x, t),
+                mix(state.p, fine.p, t)
+            );
+            // hit_state = state;
+            let disk_start = uniforms.disk_start;
+            let disk_end = uniforms.disk_end;
+
+
+            // Check for disk intersection
+            let hit_distance = hit_state.x.x;
+            if hit_distance >= disk_start * disk_start && hit_distance < disk_end * disk_end {
+                color += disk(hit_state.x.x, hit_state.x.z);
+            }
+        }
+
+        state = fine;
     }
 
 
@@ -515,21 +561,18 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
 
 
 
-    let _d = derivatives(
-        r,
-        theta,
-        phi,
-        a,
-        p_r,
-        p_theta,
-        b,
-        q,
+    let _d = integrand(
+        state,
+        constants
     );
 
+    r = state.x.x;
+    theta = state.x.y;
+    phi = state.x.z;
 
-    let v1 = vec3(sin(theta) * cos(phi), sin(phi) * sin(theta), cos(theta)) * _d.r;
-    let v2 = vec3(r * cos(phi) * cos(theta), r * sin(phi) * cos(theta), -r * sin(theta)) * _d.theta;
-    let v3 = vec3(-r * sin(phi) * sin(theta), r * sin(theta) * cos(phi), 0.0) * _d.phi;
+    let v1 = vec3(sin(theta) * cos(phi), sin(phi) * sin(theta), cos(theta)) * _d.x.x;
+    let v2 = vec3(r * cos(phi) * cos(theta), r * sin(phi) * cos(theta), -r * sin(theta)) * _d.x.y;
+    let v3 = vec3(-r * sin(phi) * sin(theta), r * sin(theta) * cos(phi), 0.0) * _d.x.z;
     let dir = normalize(v1 + v2 + v3);
 
     output_colour = vec3(checker(
@@ -538,11 +581,13 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
     ) * select(
         vec3(1.0, 0.0, 0.0),
         vec3(0.0, 0.0, 1.0),
-        r > 500.0
+        r > 50.0
     ));
 
     // output_colour = dir;
     // output_colour.y = vec3(checker(dir, 5.0)).y;
-    // output_colour = skybox(dir);
+    output_colour = skybox(dir);
+    // output_colour = vec3(select(0.0, 1.0, state.x.z > 0.0));
+    output_colour += color;
     return vec4<f32>(output_colour, 1.0);
 }

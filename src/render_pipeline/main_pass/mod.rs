@@ -64,15 +64,15 @@ impl Default for MainPassSettings {
             disk_bool: false,
             disk_hide: false,
             misc_bool: false,
-            step_count: 128,
+            step_count: 150,
             initial_step: 0.00050,
-            rel_error: 1.0E-5,
-            abs_error: 1.0E-5,
-            max_step: 0.25,
+            rel_error: 0.0000030,
+            abs_error: 0.0000020,
+            max_step: 0.02,
             method: IntegrationMethod::Rk4,
             disk_start: 1.0,
-            disk_end: 100.0,
-            spin: 0.0,
+            disk_end: 16.0,
+            spin: 1.0,
         }
     }
 }
@@ -152,15 +152,21 @@ fn prepare_uniforms(
         let view = view.transform.compute_matrix();
         let inverse_view = view.inverse();
 
+        let pos = Transform::from_matrix(view).translation;
+
+        let r = pos.length(); //Vec3::new(transform.translation.x, 0.0, transform.translation.z).length();
+        let theta = f32::acos(pos.y / pos.length());
+        let phi: f32 = pos.x.atan2(pos.z); // f32::atan2(transform.translation.x, transform.translation.z);
+
+        let view = view;
+
+        // let camera = projection * inverse_view;
+        // let camera_inverse = view * inverse_projection;
+
         let camera = projection * inverse_view;
         let camera_inverse = view * inverse_projection;
 
-        let transform = Transform::from_matrix(view);
-
-        let r = transform.translation.x; //Vec3::new(transform.translation.x, 0.0, transform.translation.z).length();
-        let theta: f32 = PI / 2.0;
-        let phi: f32 = transform.translation.y; // f32::atan2(transform.translation.x, transform.translation.z);
-        let a = 0.0;
+        let a = settings.spin;
 
         let (r, theta, phi, a, rho, Delta, Sigma, alpha, omega, omega_bar) =
             metric_values(r, theta, phi, a);
@@ -172,7 +178,7 @@ fn prepare_uniforms(
 
         let uniforms = TraceUniforms {
             camera,
-            camera_inverse,
+            camera_inverse: camera.inverse(),
 
             time: elapsed as f32,
 
@@ -201,7 +207,7 @@ fn prepare_uniforms(
             r,
             theta,
             phi,
-            a: settings.spin,
+            a,
 
             rho,
             Delta,
@@ -214,19 +220,6 @@ fn prepare_uniforms(
             B_theta: B.y,
             B_phi: B.z,
             beta: beta,
-            // theta: 1.5707963267948966,
-            // phi: phi,
-            // a: settings.max_step,
-            // rho: 4.0,
-            // Delta: 8.9801,
-            // Sigma: 16.71892341031563,
-            // alpha: 0.7169556135594313,
-            // omega: 0.02833404406945562,
-            // omega_bar: 4.179730852578907,
-            // B_r: 0.0,
-            // B_theta: 0.0,
-            // B_phi: 1.0,
-            // beta: 0.4832969358080979,
         };
 
         let mut uniform_buffer = UniformBuffer::from(uniforms);
