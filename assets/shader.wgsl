@@ -114,17 +114,6 @@ fn disk(r: f32, theta: f32) -> vec3<f32> {
     }
 }
 
-// fn disk(point: vec3<f32>) -> vec3<f32> {
-//     if uniforms.disk_mode == 1u {
-//         return disk_sample(point, 0.0) + disk_sample(point, 1.0 / 3.0) + disk_sample(point, 2.0 / 3.0);
-//     } else if uniforms.disk_mode == 2u {
-
-//         return vec3(0.75) * mix(vec3(0.8, 0.2, 0.2), vec3(0.2, 0.2, 0.2), checker(point, 1.0));
-//     } else {
-//         return vec3(0.0);
-//     }
-// }
-
 
 fn rk4_step(ray: State, h: f32, constants: Constants) -> State {
     let k1 = integrand(ray, constants);
@@ -138,42 +127,9 @@ fn rk4_step(ray: State, h: f32, constants: Constants) -> State {
 }
 
 
-fn metric_values(
-    r: f32,
-    theta: f32,
-    phi: f32,
-    a: f32,
-    rho: ptr<function, f32>,
-    Delta: ptr<function, f32>,
-    Sigma: ptr<function, f32>,
-    alpha: ptr<function, f32>,
-    omega: ptr<function, f32>,
-    omega_bar: ptr<function, f32>
-) {
-    *rho = sqrt(r * 2.0 + a * 2.0 * cos(theta));
-    *Delta = r * r - 2.0 * r + a * a;
-    *Sigma = sqrt(pow(r * r + a * a, 2.0) - a * a * *Delta * sin(theta) * sin(theta));
-    *alpha = *rho * sqrt(*Delta) / *Sigma;
-    *omega = 2.0 * a * r / (*Sigma * *Sigma);
-    *omega_bar = *Sigma * sin(theta) / *rho;
-}
-
-
-fn ray_values(r: f32, theta: f32, phi: f32, a: f32, rho: f32, Delta: f32, Sigma: f32, alpha: f32, omega: f32, omega_bar: f32, b: f32, q: f32, P: ptr<function, f32>, R: ptr<function, f32>, Theta: ptr<function, f32>) {
-    *P = r * r + a * a - a * b;
-    *R = *P * *P - Delta * ((b - a) * (b - a) + q);
-    *Theta = q - cos(theta) * cos(theta) * (b * b / (sin(theta) * sin(theta)) - a * a);
-}
-
-
 struct State {
     x: vec3<f32>,
     p: vec2<f32>,
-    // r: f32,
-    // theta: f32,
-    // phi: f32, 
-    // p_r: f32,
-    // p_theta: f32,
 }
 
 struct Constants { 
@@ -198,58 +154,47 @@ fn integrand(
     let q = constants.q;
     let a = constants.a;
 
-    let x0_0: f32 = a * a;
-    let x0_1: f32 = r * r;
-    let o0: f32 = p_r * (-2.0 * r + x0_0 + x0_1) / (x0_0 * cos(theta) * cos(theta) + x0_1);
-
-    let o1: f32 = p_theta / (a * a * cos(theta) * cos(theta) + r * r);
-
-    let x2_0: f32 = a * a;
-    let x2_1: f32 = 2.0 * r;
-    let x2_2: f32 = r * r;
-    let x2_3: f32 = cos(theta) * cos(theta);
-    let x2_4: f32 = x2_0 * x2_3;
-    let x2_5: f32 = a * x2_1;
-    let o2: f32 = (-b * x2_1 + b * x2_2 + b * x2_4 - x2_3 * x2_5 + x2_5) / ((x2_2 + x2_4) * (x2_0 - x2_1 + x2_2) * sin(theta) * sin(theta));
-
-    let x3_0: f32 = sin(theta) * sin(theta);
-    let x3_1: f32 = 2.0 * r;
-    let x3_2: f32 = r * r;
-    let x3_3: f32 = a * a;
-    let x3_4: f32 = x3_2 + x3_3;
-    let x3_5: f32 = -x3_1 + x3_4;
-    let x3_6: f32 = x3_5 * x3_5;
-    let x3_7: f32 = cos(theta) * cos(theta);
-    let x3_8: f32 = x3_2 + x3_3 * x3_7;
-    let x3_9: f32 = p_r * p_r;
-    let x3_10: f32 = x3_0 * x3_6;
-    let x3_11: f32 = r - 1.0;
-    let x3_12: f32 = -x3_11 * x3_8;
-    let x3_13: f32 = q * x3_0 + x3_7 * (-b * b + x3_0 * x3_3);
-    let x3_14: f32 = -a * b + x3_4;
-    let x3_15: f32 = q + (a - b) * (a - b) ;
-    let x3_16: f32 = x3_0 * (x3_14 * x3_14 - x3_15 * x3_5) + x3_13 * x3_5;
-    let o3: f32 = (r * x3_10 * (p_theta * p_theta + x3_5 * x3_9) - r * x3_16 * x3_5 + x3_10 * x3_12 * x3_9 + x3_12 * x3_16 + x3_5 * x3_8 * (x3_0 * (x3_1 * x3_14 - x3_11 * x3_15) + x3_11 * x3_13)) / (x3_0 * x3_6 * x3_8 * x3_8);
-
-    let x4_0: f32 = cos(theta);
-    let x4_1: f32 = sin(theta);
-    let x4_2: f32 = r * r;
-    let x4_3: f32 = a * a;
-    let x4_4: f32 = x4_2 + x4_3;
-    let x4_5: f32 = -2.0 * r + x4_4;
-    let x4_6: f32 = x4_0 * x4_0 ;
-    let x4_7: f32 = x4_2 + x4_3 * x4_6;
-    let x4_8: f32 = -b * b;
-    let x4_9: f32 = pow(x4_1, 4.0) * x4_3;
-    let x4_10: f32 = x4_1 * x4_1;
-    let x4_11: f32 = x4_10 * x4_3;
-    let o4: f32 = x4_0 * (x4_11 * (x4_10 * (-x4_5 * (q + (a - b) * (a - b)) + (-a * b + x4_4) * (-a * b + x4_4)) + x4_5 * (q * x4_10 + x4_6 * (x4_11 + x4_8))) + x4_5 * x4_7 * (-x4_8 - x4_9) + x4_5 * x4_9 * (-p_r * p_r * x4_5 - p_theta * p_theta)) / (x4_1 * x4_1 * x4_1 * x4_5 * x4_7 * x4_7);
-
-
+    let x0: f32 = 2.0 * r;
+    let x1: f32 = pow(r, 2.0);
+    let x2: f32 = pow(a, 2.0);
+    let x3: f32 = x1 + x2;
+    let x4: f32 = -x0 + x3;
+    let x5: f32 = cos(theta);
+    let x6: f32 = pow(x5, 2.0);
+    let x7: f32 = x2 * x6;
+    let x8: f32 = x1 + x7;
+    let x9: f32 = 1.0 / x8;
+    let x10: f32 = sin(theta);
+    let x11: f32 = pow(x10, 2.0);
+    let x12: f32 = 1.0 / x11;
+    let x13: f32 = 1.0 / x4;
+    let x14: f32 = a * x0;
+    let x15: f32 = pow(x4, 2.0);
+    let x16: f32 = pow(x8, -2.0);
+    let x17: f32 = pow(p_theta, 2.0);
+    let x18: f32 = pow(p_r, 2.0);
+    let x19: f32 = x11 * x15;
+    let x20: f32 = r - 1.0;
+    let x21: f32 = -x20 * x8;
+    let x22: f32 = -pow(b, 2.0);
+    let x23: f32 = x11 * x2;
+    let x24: f32 = q * x11 + x6 * (x22 + x23);
+    let x25: f32 = -a * b + x3;
+    let x26: f32 = q + pow(a - b, 2.0);
+    let x27: f32 = x4 * x8;
+    let x28: f32 = x11 * (pow(x25, 2.0) - x26 * x4) + x24 * x4;
+    let x29: f32 = pow(x10, 4.0) * x2;
 
     return State(
-        -vec3(o0, o1, o2),
-        -vec2(o3, o4)
+        -vec3(
+            p_r * x4 * x9,
+            p_theta * x9,
+            x12 * x13 * x9 * (-b * x0 + b * x1 + b * x7 - x14 * x6 + x14),
+        ),
+        -vec2(
+            x12 * x16 * (r * x19 * (x17 + x18 * x4) - r * x28 * x4 + x18 * x19 * x21 + x21 * x28 + x27 * (x11 * (x0 * x25 - x20 * x26) + x20 * x24)) / x15,
+            x13 * x16 * x5 * (x23 * x28 + x27 * (-x22 - x29) + x29 * x4 * (-x17 - x18 * x4)) / pow(x10, 3.0),
+        )
     );
 }
 
@@ -281,13 +226,10 @@ fn rotationMatrix(axis: vec3<f32>, angle: f32) -> mat3x3<f32> {
 fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
     let clip_space = vec2(1.0, -1.0) * (in.uv * 2.0 - 1.0);
     var output_colour = vec3(0.0);
+    var disk_color = vec3(0.0);
 
     var ray = get_camera(clip_space);
     
-
-
-
-
     // // Observer 
     var r: f32 = uniforms.r;
     var theta: f32 = uniforms.theta;
@@ -304,25 +246,12 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
     let B_phi: f32 = uniforms.B_phi;
     let beta: f32 = uniforms.beta;
 
-    // Camera ray
+    // Camera ray (Nobody likes people who use different coordinates, this is honestly worse that spherical)
     var n: vec3<f32> = normalize(vec3(
         -ray.dir.z,
         -ray.dir.y,
         ray.dir.x,
-    ));
-    // n = n * rotationMatrix(cross(vec3(0.0, 1.0, 0.0), ray.pos), -theta);
-    // n = n * rotationMatrix(vec3(0.0, 1.0, 0.0), phi);
-    n = n * rotationMatrix(vec3(0.0, 1.0, 0.0), -phi);
-    n = n * rotationMatrix(normalize(vec3(0.0, 0.0, 1.0)), theta + 0.5 * 3.141592653589793);
-    
-    
-    
-    // n = vec3(    
-    //     n.x * cos(theta),
-    //     n.y * sin(theta),
-    //     n.z * cos(theta) 
-    // )
-
+    )) * rotationMatrix(vec3(0.0, 1.0, 0.0), -phi) * rotationMatrix(normalize(vec3(0.0, 0.0, 1.0)), theta + 0.5 * 3.141592653589793);
 
     // Cartesian FIDO ray
     let quotient: f32 = 1.0 - beta * n.y;
@@ -358,9 +287,6 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
     let rel_tol = uniforms.rel_error;
     let abs_tol = uniforms.abs_error;
 
-
-
-    var color = vec3(0.0);
 
     var fine: State;
     var coarse: State;
@@ -428,137 +354,17 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
                 mix(state.x, fine.x, t),
                 mix(state.p, fine.p, t)
             );
-            // hit_state = state;
-            let disk_start = uniforms.disk_start;
-            let disk_end = uniforms.disk_end;
 
 
             // Check for disk intersection
             let hit_distance = hit_state.x.x;
-            if hit_distance >= disk_start * disk_start && hit_distance < disk_end * disk_end {
-                color += disk(hit_state.x.x, hit_state.x.z);
+            if hit_distance >= uniforms.disk_start * uniforms.disk_start && hit_distance < uniforms.disk_end * uniforms.disk_end {
+                disk_color += disk(hit_state.x.x, hit_state.x.z);
             }
         }
 
         state = fine;
     }
-
-
-    // let h_vec = cross(ray.pos, ray.dir);
-    // let h2 = dot(h_vec, h_vec);
-
- 
-
-
-    // var hit = 0.0;
-    // var phi = 0.0;
-
-
-    // let disk_start = uniforms.disk_start;
-    // let disk_end = uniforms.disk_end;
-
-    // var color = vec3(0.0);
-
-
-    // for (var i = 0; i < uniforms.step_count; i += 1) {
-    //     // Integrate using selected method
-    //     var ray_coarse = Ray();
-    //     var ray_fine = Ray();
-    //     if uniforms.method == 0u {
-    //         ray_coarse = rk4_step(ray, 2.0 * h, h2);
-    //         let ray_mid = rk4_step(ray, h, h2);
-    //         ray_fine = rk4_step(ray_mid, h, h2);
-    //     } else {
-    //         let k1 = integrand(ray, h2);
-    //         ray_coarse = Ray(
-    //             ray.pos + k1.pos * h,
-    //             ray.dir + k1.dir * h,
-    //         );
-    //         let ray_mid = Ray(
-    //             ray.pos + k1.pos * h * 0.5,
-    //             ray.dir + k1.dir * h * 0.5,
-    //         );
-    //         let k2 = integrand(ray_mid, h2);
-    //         ray_fine = Ray(
-    //             ray_mid.pos + k2.pos * h * 0.5,
-    //             ray_mid.dir + k2.dir * h * 0.5,
-    //         );
-    //     }
-
-    //     // Determine error and adapt step size
-    //     let error_ray = Ray(
-    //         ray_coarse.pos - ray_fine.pos,
-    //         ray_coarse.dir - ray_fine.dir
-    //     );
-    //     let error = sqrt(dot(error_ray.pos, error_ray.pos) + dot(error_ray.dir, error_ray.dir));
-    //     let y = sqrt(dot(ray.pos, ray.pos) + dot(ray.dir, ray.dir));
-    //     h = min(h * clamp(sqrt(max(abs_tol, abs(y) * rel_tol) / abs(error)), 0.3, 2.0), max_step);
-
-    //     // Check for y-plane intersection
-    //     if (ray_fine.pos.y * ray.pos.y) <= 0.0 {
-    //         // Approximate hit location
-    //         let t = -ray.pos.y / (ray_fine.pos.y - ray.pos.y);
-    //         let hit_ray = Ray(
-    //             mix(ray.pos, ray_fine.pos, t) * vec3(1.0, 0.0, 1.0),
-    //             mix(ray.dir, ray_fine.dir, t)
-    //         );
-
-    //         // Check for disk intersection
-    //         let hit_distance = dot(hit_ray.pos, hit_ray.pos);
-    //         if hit_distance >= disk_start * disk_start && hit_distance < disk_end * disk_end {
-    //             color += disk(hit_ray.pos);
-    //         }
-    //     }
-
-    //     // If light ray passes below horizon
-    //     if dot(ray_fine.pos, ray_fine.pos) <= 1.0 && dot(ray.pos, ray.pos) >= 1.0 {
-    //         let l_i = sqrt(dot(ray.pos, ray.pos));
-    //         let l_f = sqrt(dot(ray_fine.pos, ray_fine.pos));
-
-    //         let t = - (l_i - 1.0) / (l_f - l_i);
-    //         ray = Ray(
-    //             mix(ray.pos, ray_fine.pos, t),
-    //             mix(ray.dir, ray_fine.dir, t)
-    //         );
-    //         hit = 1.0; 
-    //         break;
-    //     }
-
-    //     ray = ray_fine;
-    // }
-
-    // let r = ray.pos;
-    // let v = ray.dir;
-
-    // let r_hat = normalize(r);
-    // let v_hat = normalize(v);
-
-
-    // output_colour = max(mix(skybox(v_hat), surface(r_hat), hit), vec3(0.0));
-    // output_colour += color;
-
-    // output_colour = vec3(
-    //     checker(n, 1.0),
-    //     0.0,
-    //     checker(nF, 1.0)
-    // );
-
-
-    // output_colour = vec3(
-    //     checker(
-    //         spherical_to_dir(
-    //             p_theta,
-    //             p_phi,
-    //         ),
-    //         5.0
-    //     )
-    // );
-
-    // output_colour = skybox(
-    //     spherical_to_dir(theta, phi)
-    // );
-
-
 
 
     let _d = integrand(
@@ -588,6 +394,6 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
     // output_colour.y = vec3(checker(dir, 5.0)).y;
     output_colour = skybox(dir);
     // output_colour = vec3(select(0.0, 1.0, state.x.z > 0.0));
-    output_colour += color;
+    output_colour += disk_color;
     return vec4<f32>(output_colour, 1.0);
 }

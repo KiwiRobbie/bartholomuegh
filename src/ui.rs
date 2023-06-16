@@ -1,5 +1,7 @@
 use crate::render_pipeline::IntegrationMethod;
 use crate::render_pipeline::MainPassSettings;
+use bevy::diagnostic::Diagnostics;
+use bevy::diagnostic::FrameTimeDiagnosticsPlugin;
 use bevy::{
     core_pipeline::{bloom::BloomSettings, fxaa::Fxaa, tonemapping::Tonemapping},
     prelude::*,
@@ -31,10 +33,14 @@ fn ui_system(
         Option<&mut Projection>,
     )>,
     window: Query<Entity, With<PrimaryWindow>>,
+    diagnostics: Res<Diagnostics>,
 ) {
     egui::Window::new("Settings")
         .anchor(egui::Align2::RIGHT_TOP, [-5.0, 5.0])
         .show(contexts.ctx_for_window_mut(window.single()), |ui| {
+            if let Some(fps) = diagnostics.get_measurement(FrameTimeDiagnosticsPlugin::FPS) {
+                ui.label(format!("{:.3}FPS", fps.value));
+            }
             for (
                 i,
                 (mut trace_settings, mut transform, bloom_settings, tonemapping, fxaa, projection),

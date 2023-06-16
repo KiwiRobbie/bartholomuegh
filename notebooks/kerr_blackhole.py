@@ -182,7 +182,6 @@ ax = plt.figure().add_subplot(projection="3d")
 
 observer = Observer(100.0, pi / 2, 0, 0.0, 0.0, 0.0, 1.0)
 
-
 for phi in np.linspace(-pi / 2, pi / 2, 4, endpoint=False):
     for theta in np.linspace(0, 2 * pi, 8, endpoint=False):
         print(theta, phi)

@@ -1,3 +1,4 @@
+use bevy::diagnostic::FrameTimeDiagnosticsPlugin;
 use bevy::{core_pipeline::bloom::BloomSettings, prelude::*, render::camera::CameraRenderGraph};
 use character::CharacterEntity;
 use render_pipeline::MainPassSettings;
@@ -12,6 +13,7 @@ fn main() {
             watch_for_changes: true,
             ..default()
         }))
+        .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(render_pipeline::RenderPlugin)
         .add_plugin(character::CharacterPlugin)
         .add_plugin(ui::UiPlugin)
