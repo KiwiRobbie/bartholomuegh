@@ -66,7 +66,7 @@ impl Default for MainPassSettings {
             misc_bool: false,
             step_count: 100,
             initial_step: 0.00050,
-            rel_error: 0.00000050,
+            rel_error: 0.0000010,
             abs_error: 0.0000010,
             max_step: 1.0,
             method: IntegrationMethod::Rk4,
