@@ -64,14 +64,14 @@ impl Default for MainPassSettings {
             disk_bool: false,
             disk_hide: false,
             misc_bool: false,
-            step_count: 150,
+            step_count: 100,
             initial_step: 0.00050,
-            rel_error: 0.0000030,
-            abs_error: 0.0000020,
+            rel_error: 0.00000050,
+            abs_error: 0.0000010,
             max_step: 0.02,
             method: IntegrationMethod::Rk4,
             disk_start: 1.0,
-            disk_end: 16.0,
+            disk_end: 12.0,
             spin: 1.0,
         }
     }
