@@ -58,8 +58,7 @@ fn change_state(
                 //     .expect("Could not obtain input node!")
                 //     .id;
 
-                let input_node_id =
-                    voxel_graph.set_input(vec![SlotInfo::new("view_entity", SlotType::Entity)]);
+                let input_node_id = voxel_graph.get_input_node().unwrap().id;
                 match settings.pass {
                     MainPasses::Kerr => {
                         dbg!("Switching to ker");
@@ -69,6 +68,7 @@ fn change_state(
                             "schwarzschild_pass",
                             "view",
                         );
+                        voxel_graph.remove_node_edge("schwarzschild_pass", "bloom");
 
                         voxel_graph.add_slot_edge(
                             input_node_id,
@@ -76,21 +76,25 @@ fn change_state(
                             "kerr_pass",
                             "view",
                         );
+                        voxel_graph.add_node_edge("kerr_pass", "bloom");
                     }
                     MainPasses::Schwarzschild => {
+                        dbg!("Switching to schwarzchild");
                         voxel_graph.remove_slot_edge(
                             input_node_id,
                             "view_entity",
                             "kerr_pass",
                             "view",
                         );
-                        dbg!("Switching to schwarzchild");
+                        voxel_graph.remove_node_edge("kerr_pass", "bloom");
+
                         voxel_graph.add_slot_edge(
                             input_node_id,
                             "view_entity",
                             "schwarzschild_pass",
                             "view",
                         );
+                        voxel_graph.add_node_edge("schwarzschild_pass", "bloom");
                     }
                 }
             }
