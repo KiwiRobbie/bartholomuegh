@@ -155,7 +155,7 @@ fn update_character(
 
     transform.translation += character.velocity * time.delta_seconds();
 
-    settings.velocity = character.velocity * settings.reletavistic_scale / character.speed;
+    // settings.velocity = character.velocity * settings.reletavistic_scale / character.speed;
 }
 
 fn lerp(i: Vec3, f: Vec3, s: f32, dt: f32) -> Vec3 {
