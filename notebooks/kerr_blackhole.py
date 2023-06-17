@@ -27,6 +27,8 @@ class Observer:
         Omega = 1 / (a + r**1.5)
         self.beta = omega_bar / alpha * (Omega - omega)
 
+        print(self.metric_values, (B_r, B_theta, B_phi), self.beta)
+
     def fido_ray(self, x, y, z):
         (
             r,
@@ -178,17 +180,18 @@ class Ray:
 ax = plt.figure().add_subplot(projection="3d")
 
 
-observer = Observer(4, pi / 2, 0, 0.99, 0.0, 0.0, 1.0)
+observer = Observer(2.0, pi / 2, 0.0, 0.999, 0.0, 0.0, 1.0)
 
+for phi in np.linspace(-pi / 2, pi / 2, 3, endpoint=False):
+    for theta in np.linspace(0, 2 * pi, 6, endpoint=False):
+        print(theta, phi)
+        x, y, z = (cos(theta) * cos(phi), sin(theta), cos(theta) * sin(phi))
 
-for theta in np.linspace(-pi / 2, pi / 2, 3, endpoint=False):
-    for phi in np.linspace(0, 2 * pi, 6, endpoint=False):
-        x, y, z = sin(theta) * cos(phi), sin(phi), cos(theta) * cos(phi)
         ray = observer.fido_ray(x, y, z)
         data = ([], [], [])
-        for i in range(10000):
+        for i in range(100):
             try:
-                ray.euler_step(0.005)
+                ray.euler_step(0.1)
             except:
                 break
             _r = ray.r
@@ -201,14 +204,16 @@ for theta in np.linspace(-pi / 2, pi / 2, 3, endpoint=False):
 
         ax.plot(
             *data,
-            "r" if y > 0 else "b",
+            "r" if y > 0 else ("k" if y == 0 else "b"),
             label="parametric curve",
             linewidth=1,
             alpha=0.4
         )
+# ax.plot(*data, label="parametric curve", linewidth=1, alpha=0.4)
 
-ax.axes.set_xlim3d(left=-5.0, right=5)
-ax.axes.set_ylim3d(bottom=-5.0, top=5)
-ax.axes.set_zlim3d(bottom=-5.0, top=5)
+R = 150
+ax.axes.set_xlim3d(left=-R, right=R)
+ax.axes.set_ylim3d(bottom=-R, top=R)
+ax.axes.set_zlim3d(bottom=-R, top=R)
 
 plt.show()

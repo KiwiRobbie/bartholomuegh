@@ -1,4 +1,4 @@
-use super::{MainPassPipelineData, ViewMainPassUniformBuffer};
+use super::{SchwarzschildPassPipelineData, ViewSchwarzschildPassUniformBuffer};
 use crate::render_pipeline::RenderGraphSettings;
 use bevy::{
     prelude::*,
@@ -9,12 +9,16 @@ use bevy::{
     },
 };
 
-pub struct MainPassNode {
-    query:
-        QueryState<(&'static ViewTarget, &'static ViewMainPassUniformBuffer), With<ExtractedView>>,
+pub struct SchwarzschildPassNode {
+    query: QueryState<
+        (
+            &'static ViewTarget,
+            &'static ViewSchwarzschildPassUniformBuffer,
+        ),
+        With<ExtractedView>,
+    >,
 }
-
-impl MainPassNode {
+impl SchwarzschildPassNode {
     pub fn new(world: &mut World) -> Self {
         Self {
             query: world.query_filtered(),
@@ -22,7 +26,7 @@ impl MainPassNode {
     }
 }
 
-impl render_graph::Node for MainPassNode {
+impl render_graph::Node for SchwarzschildPassNode {
     fn input(&self) -> Vec<SlotInfo> {
         vec![SlotInfo::new("view", SlotType::Entity)]
     }
@@ -40,7 +44,9 @@ impl render_graph::Node for MainPassNode {
         let view_entity = graph.get_input_entity("view")?;
         let pipeline_cache = world.resource::<PipelineCache>();
         // let voxel_data = world.get_resource::<VoxelData>().unwrap();
-        let pipeline_data = world.get_resource::<MainPassPipelineData>().unwrap();
+        let pipeline_data = world
+            .get_resource::<SchwarzschildPassPipelineData>()
+            .unwrap();
         let render_graph_settings = world.get_resource::<RenderGraphSettings>().unwrap();
 
         if !render_graph_settings.trace {
@@ -60,7 +66,7 @@ impl render_graph::Node for MainPassNode {
         let bind_group = render_context
             .render_device()
             .create_bind_group(&BindGroupDescriptor {
-                label: Some("main pass bind group"),
+                label: Some("schwarzchild pass bind group"),
                 layout: &pipeline_data.bind_group_layout,
                 entries: &[BindGroupEntry {
                     binding: 0,
@@ -69,7 +75,7 @@ impl render_graph::Node for MainPassNode {
             });
 
         let render_pass_descriptor = RenderPassDescriptor {
-            label: Some("main pass"),
+            label: Some("schwarzchild pass"),
             color_attachments: &[Some(RenderPassColorAttachment {
                 view: target.main_texture(),
                 resolve_target: None,

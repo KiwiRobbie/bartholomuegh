@@ -1,5 +1,12 @@
+use crate::main;
 use crate::render_pipeline::IntegrationMethod;
+use crate::render_pipeline::KerrPassSettings;
 use crate::render_pipeline::MainPassSettings;
+use crate::render_pipeline::MainPasses;
+use bevy::diagnostic::Diagnostics;
+use bevy::diagnostic::FrameTimeDiagnosticsPlugin;
+use bevy::render::render_graph;
+
 use bevy::{
     core_pipeline::{bloom::BloomSettings, fxaa::Fxaa, tonemapping::Tonemapping},
     prelude::*,
@@ -23,23 +30,54 @@ impl Plugin for UiPlugin {
 fn ui_system(
     mut contexts: EguiContexts,
     mut camera_settings_query: Query<(
-        &mut MainPassSettings,
+        &mut KerrPassSettings,
         &mut Transform,
+        &mut MainPassSettings,
         Option<&mut BloomSettings>,
         Option<&mut Tonemapping>,
         Option<&mut Fxaa>,
         Option<&mut Projection>,
     )>,
     window: Query<Entity, With<PrimaryWindow>>,
+    diagnostics: Res<Diagnostics>,
 ) {
+    // voxel_graph.add_node("kerr_pass", kerr_node);
+    // voxel_graph.add_slot_edge(input_node_id, "view_entity", "kerr_pass", "view");
+
+    // RenderGraph::remove_slot_edge(&mut self, output_node, input_node);
+
+    // //
+
     egui::Window::new("Settings")
         .anchor(egui::Align2::RIGHT_TOP, [-5.0, 5.0])
         .show(contexts.ctx_for_window_mut(window.single()), |ui| {
+            if let Some(fps) = diagnostics.get_measurement(FrameTimeDiagnosticsPlugin::FPS) {
+                ui.label(format!("{:.3}FPS", fps.value));
+            }
+
             for (
                 i,
-                (mut trace_settings, mut transform, bloom_settings, tonemapping, fxaa, projection),
+                (
+                    mut trace_settings,
+                    mut transform,
+                    mut main_pass_settings,
+                    bloom_settings,
+                    tonemapping,
+                    fxaa,
+                    projection,
+                ),
             ) in camera_settings_query.iter_mut().enumerate()
             {
+                if ui.button("Switch Metric").clicked() {
+                    main_pass_settings.updated = true;
+                    main_pass_settings.pass = match main_pass_settings.pass {
+                        MainPasses::Kerr => MainPasses::Schwarzschild,
+                        MainPasses::Schwarzschild => MainPasses::Kerr,
+                    }
+                } else {
+                    main_pass_settings.updated = false;
+                }
+
                 CollapsingHeader::new(format!("Camera Settings {}", i))
                     .default_open(true)
                     .show(ui, |ui| {
@@ -52,12 +90,12 @@ fn ui_system(
                                         .logarithmic(true),
                                 );
                                 ui.add(
-                                    Slider::new(&mut trace_settings.rel_error, 0.000001..=0.1)
+                                    Slider::new(&mut trace_settings.rel_error, 0.00000001..=0.1)
                                         .text("Relative Error Tolerance")
                                         .logarithmic(true),
                                 );
                                 ui.add(
-                                    Slider::new(&mut trace_settings.abs_error, 0.000001..=0.1)
+                                    Slider::new(&mut trace_settings.abs_error, 0.00000001..=0.1)
                                         .text("Absolute Error Tolerance")
                                         .logarithmic(true),
                                 );
@@ -104,6 +142,11 @@ fn ui_system(
                                 ui.add(
                                     Slider::new(&mut trace_settings.disk_end, 1.0..=100.0)
                                         .text("Outer Radius")
+                                        .logarithmic(true),
+                                );
+                                ui.add(
+                                    Slider::new(&mut trace_settings.spin, 0.0..=1.0)
+                                        .text("Spin")
                                         .logarithmic(true),
                                 );
                             });
