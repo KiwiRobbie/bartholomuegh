@@ -1,7 +1,7 @@
 use bevy::diagnostic::FrameTimeDiagnosticsPlugin;
 use bevy::{core_pipeline::bloom::BloomSettings, prelude::*, render::camera::CameraRenderGraph};
 use character::CharacterEntity;
-use render_pipeline::MainPassSettings;
+use render_pipeline::{KerrPassSettings, MainPassSettings, SchwarzschildPassSettings};
 
 mod character;
 mod render_pipeline;
@@ -39,8 +39,10 @@ fn setup(mut commands: Commands) {
             }),
             ..default()
         },
-        MainPassSettings::default(),
+        KerrPassSettings::default(),
+        SchwarzschildPassSettings::default(),
         BloomSettings::default(),
+        MainPassSettings::default(),
         CharacterEntity {
             velocity: Vec3::ZERO,
             speed: 10.0,

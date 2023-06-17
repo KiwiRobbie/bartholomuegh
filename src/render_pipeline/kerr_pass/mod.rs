@@ -1,5 +1,6 @@
 use std::f32::consts::PI;
 
+pub use crate::render_pipeline::common::IntegrationMethod;
 use bevy::{
     core_pipeline::fullscreen_vertex_shader::fullscreen_shader_vertex_state,
     prelude::*,
@@ -11,37 +12,31 @@ use bevy::{
         RenderApp, RenderSet,
     },
 };
-pub use node::MainPassNode;
+pub use node::KerrPassNode;
 
 mod node;
 
-pub struct MainPassPlugin;
+pub struct KerrPassPlugin;
 
-impl Plugin for MainPassPlugin {
+impl Plugin for KerrPassPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugin(ExtractComponentPlugin::<MainPassSettings>::default());
+        app.add_plugin(ExtractComponentPlugin::<KerrPassSettings>::default());
 
         // setup custom render pipeline
         app.sub_app_mut(RenderApp)
-            .init_resource::<MainPassPipelineData>()
+            .init_resource::<KerrPassPipelineData>()
             .add_system(prepare_uniforms.in_set(RenderSet::Prepare));
     }
 }
 
 #[derive(Resource)]
-struct MainPassPipelineData {
+struct KerrPassPipelineData {
     pipeline_id: CachedRenderPipelineId,
     bind_group_layout: BindGroupLayout,
 }
 
-#[derive(Clone, Copy, PartialEq)]
-pub enum IntegrationMethod {
-    Rk4,
-    Euler,
-}
-
 #[derive(Component, Clone, ExtractComponent)]
-pub struct MainPassSettings {
+pub struct KerrPassSettings {
     pub surface_bool: bool,
     pub disk_bool: bool,
     pub disk_hide: bool,
@@ -57,7 +52,7 @@ pub struct MainPassSettings {
     pub spin: f32,
 }
 
-impl Default for MainPassSettings {
+impl Default for KerrPassSettings {
     fn default() -> Self {
         Self {
             surface_bool: false,
@@ -120,7 +115,7 @@ pub struct TraceUniforms {
 }
 
 #[derive(Component, Deref, DerefMut)]
-struct ViewMainPassUniformBuffer(UniformBuffer<TraceUniforms>);
+struct ViewKerrPassUniformBuffer(UniformBuffer<TraceUniforms>);
 
 fn metric_values(
     r: f32,
@@ -139,7 +134,7 @@ fn metric_values(
 
 fn prepare_uniforms(
     mut commands: Commands,
-    query: Query<(Entity, &MainPassSettings, &ExtractedView)>,
+    query: Query<(Entity, &KerrPassSettings, &ExtractedView)>,
     time: Res<Time>,
     render_device: Res<RenderDevice>,
     render_queue: Res<RenderQueue>,
@@ -227,18 +222,18 @@ fn prepare_uniforms(
 
         commands
             .entity(entity)
-            .insert(ViewMainPassUniformBuffer(uniform_buffer));
+            .insert(ViewKerrPassUniformBuffer(uniform_buffer));
     }
 }
 
-impl FromWorld for MainPassPipelineData {
+impl FromWorld for KerrPassPipelineData {
     fn from_world(render_world: &mut World) -> Self {
         let asset_server = render_world.get_resource::<AssetServer>().unwrap();
 
         let bind_group_layout = render_world
             .resource::<RenderDevice>()
             .create_bind_group_layout(&BindGroupLayoutDescriptor {
-                label: Some("trace bind group layout"),
+                label: Some("kerr bind group layout"),
                 entries: &[BindGroupLayoutEntry {
                     binding: 0,
                     visibility: ShaderStages::FRAGMENT,
@@ -251,10 +246,10 @@ impl FromWorld for MainPassPipelineData {
                 }],
             });
 
-        let trace_shader = asset_server.load("shader.wgsl");
+        let trace_shader = asset_server.load("kerr.wgsl");
 
         let trace_pipeline_descriptor = RenderPipelineDescriptor {
-            label: Some("trace pipeline".into()),
+            label: Some("kerr pipeline".into()),
             layout: vec![bind_group_layout.clone()],
             vertex: fullscreen_shader_vertex_state(),
             fragment: Some(FragmentState {
@@ -276,7 +271,7 @@ impl FromWorld for MainPassPipelineData {
         let cache = render_world.resource::<PipelineCache>();
         let pipeline_id = cache.queue_render_pipeline(trace_pipeline_descriptor);
 
-        MainPassPipelineData {
+        KerrPassPipelineData {
             pipeline_id,
             bind_group_layout,
         }
