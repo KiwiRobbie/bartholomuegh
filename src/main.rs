@@ -1,3 +1,4 @@
+use bevy::diagnostic::FrameTimeDiagnosticsPlugin;
 use bevy::{
     asset::ChangeWatcher,
     core_pipeline::{bloom::BloomSettings, fxaa::Fxaa, tonemapping::Tonemapping},

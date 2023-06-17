@@ -1,5 +1,7 @@
 use crate::render_pipeline::IntegrationMethod;
 use crate::render_pipeline::MainPassSettings;
+use bevy::diagnostic::Diagnostics;
+use bevy::diagnostic::FrameTimeDiagnosticsPlugin;
 use bevy::{
     core_pipeline::{bloom::BloomSettings, fxaa::Fxaa, tonemapping::Tonemapping},
     prelude::*,
@@ -31,10 +33,14 @@ fn ui_system(
         Option<&mut Projection>,
     )>,
     window: Query<Entity, With<PrimaryWindow>>,
+    diagnostics: Res<Diagnostics>,
 ) {
     egui::Window::new("Settings")
         .anchor(egui::Align2::RIGHT_TOP, [-5.0, 5.0])
         .show(contexts.ctx_for_window_mut(window.single()), |ui| {
+            if let Some(fps) = diagnostics.get_measurement(FrameTimeDiagnosticsPlugin::FPS) {
+                ui.label(format!("{:.3}FPS", fps.value));
+            }
             for (
                 i,
                 (mut trace_settings, mut transform, bloom_settings, tonemapping, fxaa, projection),
@@ -52,12 +58,12 @@ fn ui_system(
                                         .logarithmic(true),
                                 );
                                 ui.add(
-                                    Slider::new(&mut trace_settings.rel_error, 0.000001..=0.1)
+                                    Slider::new(&mut trace_settings.rel_error, 0.00000001..=0.1)
                                         .text("Relative Error Tolerance")
                                         .logarithmic(true),
                                 );
                                 ui.add(
-                                    Slider::new(&mut trace_settings.abs_error, 0.000001..=0.1)
+                                    Slider::new(&mut trace_settings.abs_error, 0.00000001..=0.1)
                                         .text("Absolute Error Tolerance")
                                         .logarithmic(true),
                                 );
@@ -104,6 +110,11 @@ fn ui_system(
                                 ui.add(
                                     Slider::new(&mut trace_settings.disk_end, 1.0..=100.0)
                                         .text("Outer Radius")
+                                        .logarithmic(true),
+                                );
+                                ui.add(
+                                    Slider::new(&mut trace_settings.spin, 0.0..=1.0)
+                                        .text("Spin")
                                         .logarithmic(true),
                                 );
                             });
