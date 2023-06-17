@@ -1,56 +1,35 @@
 use super::{MainPassPipelineData, ViewMainPassUniformBuffer};
 use crate::render_pipeline::RenderGraphSettings;
 use bevy::{
+    ecs::query::QueryItem,
     prelude::*,
     render::{
-        render_graph::{self, SlotInfo, SlotType},
+        render_graph::{self, ViewNode},
         render_resource::*,
-        view::{ExtractedView, ViewTarget},
+        view::ViewTarget,
     },
 };
 
-pub struct MainPassNode {
-    query:
-        QueryState<(&'static ViewTarget, &'static ViewMainPassUniformBuffer), With<ExtractedView>>,
-}
+#[derive(Default)]
+pub struct MainPassNode;
 
-impl MainPassNode {
-    pub fn new(world: &mut World) -> Self {
-        Self {
-            query: world.query_filtered(),
-        }
-    }
-}
-
-impl render_graph::Node for MainPassNode {
-    fn input(&self) -> Vec<SlotInfo> {
-        vec![SlotInfo::new("view", SlotType::Entity)]
-    }
-
-    fn update(&mut self, world: &mut World) {
-        self.query.update_archetypes(world);
-    }
+impl ViewNode for MainPassNode {
+    type ViewQuery = (&'static ViewTarget, &'static ViewMainPassUniformBuffer);
 
     fn run(
         &self,
-        graph: &mut render_graph::RenderGraphContext,
+        _graph: &mut render_graph::RenderGraphContext,
         render_context: &mut bevy::render::renderer::RenderContext,
+        (target, uniform_buffer): QueryItem<Self::ViewQuery>,
         world: &World,
     ) -> Result<(), render_graph::NodeRunError> {
-        let view_entity = graph.get_input_entity("view")?;
         let pipeline_cache = world.resource::<PipelineCache>();
-        // let voxel_data = world.get_resource::<VoxelData>().unwrap();
         let pipeline_data = world.get_resource::<MainPassPipelineData>().unwrap();
         let render_graph_settings = world.get_resource::<RenderGraphSettings>().unwrap();
 
         if !render_graph_settings.trace {
             return Ok(());
         }
-
-        let (target, uniform_buffer) = match self.query.get_manual(world, view_entity) {
-            Ok(result) => result,
-            Err(_) => panic!("Voxel camera missing component!"),
-        };
 
         let trace_pipeline = match pipeline_cache.get_render_pipeline(pipeline_data.pipeline_id) {
             Some(pipeline) => pipeline,

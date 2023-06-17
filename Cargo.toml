@@ -7,7 +7,33 @@ default-run = "bartholomuegh"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy = "0.10"
+bevy = { git = "https://github.com/bevyengine/bevy", rev = "5e3ae770ac89192e73f2473468b734d414ea0e16", default-features = false, features = [
+    "animation",
+    "bevy_asset",
+    "bevy_audio",
+    "bevy_gilrs",
+    "bevy_scene",
+    "bevy_winit",
+    "bevy_core_pipeline",
+    "bevy_pbr",
+    "bevy_gltf",
+    "bevy_render",
+    "bevy_sprite",
+    "bevy_text",
+    "bevy_ui",
+    "png",
+    "hdr",
+    "ktx2",
+    "zstd",
+    "vorbis",
+    "x11",
+    "filesystem_watcher",
+    "bevy_gizmos",
+    "android_shared_stdcxx",
+    "tonemapping_luts",
+    "default_font",
+    "webgl2"
+] }
 bevy-inspector-egui = "0.18"
 bevy_math = "0.10.1"
 plotters = "0.3.4"

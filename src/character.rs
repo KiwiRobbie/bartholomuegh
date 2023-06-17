@@ -34,8 +34,8 @@ pub struct CharacterPlugin;
 
 impl Plugin for CharacterPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(setup_character)
-            .add_system(update_character);
+        app.add_systems(Startup, setup_character)
+            .add_systems(Update, update_character);
     }
 }
 

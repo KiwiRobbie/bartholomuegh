@@ -6,7 +6,7 @@ use bevy::{
         render_resource::*,
         renderer::{RenderDevice, RenderQueue},
         view::{ExtractedView, ViewTarget},
-        RenderApp, RenderSet,
+        Render, RenderApp, RenderSet,
     },
 };
 pub use node::MainPassNode;
@@ -21,8 +21,12 @@ impl Plugin for MainPassPlugin {
 
         // setup custom render pipeline
         app.sub_app_mut(RenderApp)
-            .init_resource::<MainPassPipelineData>()
-            .add_system(prepare_uniforms.in_set(RenderSet::Prepare));
+            .add_systems(Render, prepare_uniforms.in_set(RenderSet::Prepare));
+    }
+
+    fn finish(&self, app: &mut App) {
+        app.sub_app_mut(RenderApp)
+            .init_resource::<MainPassPipelineData>();
     }
 }
 
@@ -32,6 +36,7 @@ struct MainPassPipelineData {
     bind_group_layout: BindGroupLayout,
 }
 
+#[allow(dead_code)]
 #[derive(Clone, Copy, PartialEq)]
 pub enum IntegrationMethod {
     Rk4,
@@ -100,7 +105,7 @@ pub struct TraceUniforms {
 }
 
 #[derive(Component, Deref, DerefMut)]
-struct ViewMainPassUniformBuffer(UniformBuffer<TraceUniforms>);
+pub struct ViewMainPassUniformBuffer(UniformBuffer<TraceUniforms>);
 
 fn prepare_uniforms(
     mut commands: Commands,
