@@ -292,7 +292,7 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
     var coarse: State;
 
     for (var i = 0; i < uniforms.step_count; i += 1) {
-        let max_step = uniforms.max_step * state.x.x; // Hacky but works well
+        let max_step = uniforms.max_step; // * state.x.x; // Hacky but works well
 
         if uniforms.method == 0u {
             coarse = rk4_step(state, 2.0 * h, constants);
