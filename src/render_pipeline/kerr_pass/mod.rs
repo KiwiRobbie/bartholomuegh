@@ -1,5 +1,3 @@
-use std::f32::consts::PI;
-
 pub use crate::render_pipeline::common::IntegrationMethod;
 use bevy::{
     core_pipeline::fullscreen_vertex_shader::fullscreen_shader_vertex_state,
@@ -102,16 +100,16 @@ pub struct TraceUniforms {
     pub a: f32,
 
     pub rho: f32,
-    pub Delta: f32,
-    pub Sigma: f32,
+    pub delta: f32,
+    pub sigma: f32,
     pub alpha: f32,
     pub omega: f32,
     pub omega_bar: f32,
 
-    pub B_r: f32,
-    pub B_theta: f32,
-    pub B_phi: f32,
-    pub beta: f32,
+    pub camera_velocity_r: f32,
+    pub camera_velocity_theta: f32,
+    pub camera_velocity_phi: f32,
+    pub camera_beta: f32,
 }
 
 #[derive(Component, Deref, DerefMut)]
@@ -124,12 +122,12 @@ fn metric_values(
     a: f32,
 ) -> (f32, f32, f32, f32, f32, f32, f32, f32, f32, f32) {
     let rho = (r.powi(2) + a.powi(2) * theta.cos().powi(2)).sqrt();
-    let Delta = r.powi(2) - 2.0 * r + a.powi(2);
-    let Sigma = ((r.powi(2) + a.powi(2)).powi(2) - a.powi(2) * Delta * theta.sin().powi(2)).sqrt();
-    let alpha = rho * Delta.sqrt() / Sigma;
-    let omega = 2.0 * a * r / Sigma.powi(2);
-    let omega_bar = Sigma * theta.sin() / rho;
-    return (r, theta, phi, a, rho, Delta, Sigma, alpha, omega, omega_bar);
+    let delta = r.powi(2) - 2.0 * r + a.powi(2);
+    let sigma = ((r.powi(2) + a.powi(2)).powi(2) - a.powi(2) * delta * theta.sin().powi(2)).sqrt();
+    let alpha = rho * delta.sqrt() / sigma;
+    let omega = 2.0 * a * r / sigma.powi(2);
+    let omega_bar = sigma * theta.sin() / rho;
+    return (r, theta, phi, a, rho, delta, sigma, alpha, omega, omega_bar);
 }
 
 fn prepare_uniforms(
@@ -163,17 +161,17 @@ fn prepare_uniforms(
 
         let a = settings.spin;
 
-        let (r, theta, phi, a, rho, Delta, Sigma, alpha, omega, omega_bar) =
+        let (r, theta, phi, a, rho, delta, sigma, alpha, omega, omega_bar) =
             metric_values(r, theta, phi, a);
 
-        let B = Vec3::new(0.0, 0.0, 1.0);
+        let camera_velocity = Vec3::new(0.0, 0.0, 1.0);
 
-        let Omega: f32 = 1.0 / (a + r.powf(3.0 / 2.0));
-        let beta = omega_bar / alpha * (Omega - omega);
+        let big_omega: f32 = 1.0 / (a + r.powf(3.0 / 2.0));
+        let beta = omega_bar / alpha * (big_omega - omega);
 
         let uniforms = TraceUniforms {
             camera,
-            camera_inverse: camera.inverse(),
+            camera_inverse,
 
             time: elapsed as f32,
 
@@ -205,16 +203,16 @@ fn prepare_uniforms(
             a,
 
             rho,
-            Delta,
-            Sigma,
+            delta,
+            sigma,
             alpha,
             omega,
             omega_bar,
 
-            B_r: B.x,
-            B_theta: B.y,
-            B_phi: B.z,
-            beta: beta,
+            camera_velocity_r: camera_velocity.x,
+            camera_velocity_theta: camera_velocity.y,
+            camera_velocity_phi: camera_velocity.z,
+            camera_beta: beta,
         };
 
         let mut uniform_buffer = UniformBuffer::from(uniforms);

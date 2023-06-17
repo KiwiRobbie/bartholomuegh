@@ -55,7 +55,7 @@ impl render_graph::Node for SchwarzschildPassNode {
 
         let (target, uniform_buffer) = match self.query.get_manual(world, view_entity) {
             Ok(result) => result,
-            Err(_) => panic!("Voxel camera missing component!"),
+            Err(_) => panic!("Camera missing component!"),
         };
 
         let trace_pipeline = match pipeline_cache.get_render_pipeline(pipeline_data.pipeline_id) {

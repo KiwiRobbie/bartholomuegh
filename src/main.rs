@@ -26,7 +26,7 @@ fn setup(mut commands: Commands) {
     commands.spawn((
         Camera3dBundle {
             transform: character_transform,
-            camera_render_graph: CameraRenderGraph::new("voxel"),
+            camera_render_graph: CameraRenderGraph::new("main_render"),
             camera: Camera {
                 hdr: true,
                 ..default()

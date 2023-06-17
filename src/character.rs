@@ -1,4 +1,4 @@
-use crate::render_pipeline::{KerrPassSettings, MainPassSettings, SchwarzschildPassSettings};
+use crate::render_pipeline::SchwarzschildPassSettings;
 use bevy::{
     input::mouse::{MouseMotion, MouseWheel},
     prelude::*,

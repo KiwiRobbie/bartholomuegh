@@ -1,5 +1,3 @@
-use std::f32::consts::PI;
-
 pub use crate::render_pipeline::common::IntegrationMethod;
 use bevy::{
     core_pipeline::fullscreen_vertex_shader::fullscreen_shader_vertex_state,

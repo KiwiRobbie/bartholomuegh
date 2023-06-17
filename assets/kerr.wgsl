@@ -305,13 +305,13 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
             );
 
             coarse = State(
-                state.x - h * k1.x,
-                state.p - h * k1.p,
+                state.x + h * k1.x,
+                state.p + h * k1.p,
             );
 
             let mid = State(
-                state.x - 0.5 * h * k1.x,
-                state.p - 0.5 * h * k1.p,
+                state.x + 0.5 * h * k1.x,
+                state.p + 0.5 * h * k1.p,
             );
 
             let k2 = integrand(
@@ -320,8 +320,8 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
             );
 
             fine = State(
-                mid.x - 0.5 * h * k2.x,
-                mid.p - 0.5 * h * k2.p,
+                mid.x + 0.5 * h * k2.x,
+                mid.p + 0.5 * h * k2.p,
             );
         }
 
