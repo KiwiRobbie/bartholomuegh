@@ -100,7 +100,8 @@ fn disk_sample(r: f32, phi: f32, t_offset: f32) -> vec3<f32> {
     let r = r * 1.0 + 0.02 * radius * fbm(vec3(p + vec3(0.0, uniforms.time + fract_t / radius, 0.0)));
     let color = pow(1.0 - 1.0 / r, 2.0) * BlackBodyRadiation(1.55e4 * pow(sqrt(radius), -0.75)) / 255.0;
     let density = 10.0 * pow(fbm(vec3(r) + uniforms.time * 0.01 + 1000.0 * t_offset), 1.25) * fbm(p);
-    return color.rgb * color.a * density * (1.0 - abs(1.0 - 2.0 * fract_t)) ;
+    let final_color = color.rgb * color.a * density * (1.0 - abs(1.0 - 2.0 * fract_t));
+    return  max(final_color, vec3(0.0));
 }
 
 fn disk(r: f32, theta: f32) -> vec3<f32> {
@@ -395,5 +396,5 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
     output_colour = skybox(dir);
     // output_colour = vec3(select(0.0, 1.0, state.x.z > 0.0));
     output_colour += disk_color;
-    return vec4<f32>(output_colour, 1.0);
+    return vec4<f32>(max(output_colour, vec3(0.0)), 1.0);
 }
