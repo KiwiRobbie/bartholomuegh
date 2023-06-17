@@ -3,11 +3,13 @@
 struct MainPassUniforms {
     camera: mat4x4<f32>,
     camera_inverse: mat4x4<f32>,
+
     time: f32,
 
     surface_bool: u32,
     disk_mode: u32, 
     misc_bool: u32,
+
     step_count: i32,
     initial_step: f32,
 
@@ -20,6 +22,23 @@ struct MainPassUniforms {
 
     disk_start: f32,
     disk_end: f32,
+
+    r: f32,
+    theta: f32,
+    phi: f32,
+    a: f32,
+
+    rho: f32,
+    Delta: f32,
+    Sigma: f32,
+    alpha: f32,
+    omega: f32,
+    omega_bar: f32,
+
+    B_r: f32,
+    B_theta: f32,
+    B_phi: f32,
+    beta: f32,
 };
 
 
@@ -48,6 +67,7 @@ fn fbm(v: vec3<f32>) -> f32 {
 }
 
 fn skybox(dir: vec3<f32>) -> vec3<f32> {
+
     let color = BlackBodyRadiation(1000.0 + pow(10.0, 4.0 * noise(200.0 * dir)));
     let brightness = pow(
         noise(100.0 * dir) * noise(200.0 * dir) * noise(400.0 * dir),
@@ -209,9 +229,52 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
     var disk_color = vec3(0.0);
 
     var ray = get_camera(clip_space);
+    
+    // // Observer 
+    var r: f32 = uniforms.r;
+    var theta: f32 = uniforms.theta;
+    var phi: f32 = uniforms.phi;
+    var a: f32 = uniforms.a;
+    var rho: f32 = uniforms.rho;
+    var Delta: f32 = uniforms.Delta;
+    var Sigma: f32 = uniforms.Sigma;
+    var alpha: f32 = uniforms.alpha;
+    var omega: f32 = uniforms.omega;
+    var omega_bar: f32 = uniforms.omega_bar;
+    let B_r: f32 = uniforms.B_r;
+    let B_theta: f32 = uniforms.B_theta;
+    let B_phi: f32 = uniforms.B_phi;
+    let beta: f32 = uniforms.beta;
 
-    let h_vec = cross(ray.pos, ray.dir);
-    let h2 = dot(h_vec, h_vec);
+    // Camera ray (Nobody likes people who use different coordinates, this is honestly worse that spherical)
+    var n: vec3<f32> = normalize(vec3(
+        -ray.dir.z,
+        -ray.dir.y,
+        ray.dir.x,
+    )) * rotationMatrix(vec3(0.0, 1.0, 0.0), -phi) * rotationMatrix(normalize(vec3(0.0, 0.0, 1.0)), theta + 0.5 * 3.141592653589793);
+
+    // Cartesian FIDO ray
+    let quotient: f32 = 1.0 - beta * n.y;
+    let nF: vec3<f32> = vec3(
+        -n.x * sqrt(1.0 - beta * beta),
+        (beta - n.z),
+        -n.y * sqrt(1.0 - beta * beta)
+    ) / quotient;
+
+
+    // Spherical FIDO ray
+    let kappa: f32 = sqrt(1.0 - B_theta * B_theta);
+    let nF_r: f32 = (B_phi / kappa * nF.x + B_r * nF.y + B_r * B_theta / kappa * nF.z);
+    let nF_theta: f32 = B_theta * nF.y - kappa * nF.z;
+    let nF_phi: f32 = (-B_r / kappa * nF.x + B_phi * nF.y + B_theta * B_phi / kappa * nF.z);
+
+    let E_f: f32 = 1.0 / (alpha + omega * omega_bar * nF_phi);
+    let p_t: f32 = -1.0;
+    var p_r: f32 = E_f * rho / sqrt(Delta) * nF_r;
+    var p_theta: f32 = E_f * rho * nF_theta;
+    let p_phi: f32 = E_f * omega_bar * nF_phi;
+
+    var state = State(vec3(r, theta, phi), vec2(p_r, p_theta));
 
 
     // Constants of motion for photon
