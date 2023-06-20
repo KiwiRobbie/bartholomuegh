@@ -308,6 +308,7 @@ dependencies = [
  "bevy",
  "bevy-inspector-egui",
  "bevy_math",
+ "bevy_mod_debugdump",
  "plotters",
 ]
 
@@ -726,6 +727,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39106bc2ee21fce9496d2e15e0ba7925dff63e3eae10f7c1fc0094b56ad9f2bb"
 dependencies = [
  "glam",
+]
+
+[[package]]
+name = "bevy_mod_debugdump"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a1e89dfbe148a165d3506eab7e7c0b5339ccc7f238a475def713026bc9e8c706"
+dependencies = [
+ "bevy_app",
+ "bevy_ecs",
+ "bevy_render",
+ "bevy_utils",
+ "once_cell",
+ "petgraph",
+ "pretty-type-name",
 ]
 
 [[package]]
