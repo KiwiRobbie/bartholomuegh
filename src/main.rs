@@ -9,19 +9,32 @@ mod ui;
 
 fn main() {
     let mut app = App::new();
-    app.add_plugins(DefaultPlugins.set(AssetPlugin {
-        watch_for_changes: true,
-        ..default()
-    }))
+    app.add_plugins(
+        DefaultPlugins
+            .set(AssetPlugin {
+                watch_for_changes: true,
+                ..default()
+            })
+            .set(WindowPlugin {
+                primary_window: Some(Window {
+                    fit_canvas_to_parent: true,
+                    ..default()
+                }),
+                ..default()
+            }),
+    )
     .add_plugin(FrameTimeDiagnosticsPlugin::default())
     .add_plugin(render_pipeline::RenderPlugin)
     .add_plugin(character::CharacterPlugin)
     .add_plugin(ui::UiPlugin)
     .add_startup_system(setup);
 
-    let settings = bevy_mod_debugdump::render_graph::Settings::default();
-    let dot = bevy_mod_debugdump::render_graph_dot(&mut app, &settings);
-    std::fs::write("render-graph.dot", dot).expect("Failed to write render-graph.dot");
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        let settings = bevy_mod_debugdump::render_graph::Settings::default();
+        let dot = bevy_mod_debugdump::render_graph_dot(&mut app, &settings);
+        std::fs::write("render-graph.dot", dot).expect("Failed to write render-graph.dot");
+    }
 
     app.run();
 }

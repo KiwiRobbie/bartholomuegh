@@ -1,5 +1,5 @@
 use super::{SchwarzschildPassPipelineData, ViewSchwarzschildPassUniformBuffer};
-use crate::render_pipeline::RenderGraphSettings;
+use crate::render_pipeline::{MainPassSettings, MainPasses, RenderGraphSettings};
 use bevy::{
     prelude::*,
     render::{
@@ -14,6 +14,7 @@ pub struct SchwarzschildPassNode {
         (
             &'static ViewTarget,
             &'static ViewSchwarzschildPassUniformBuffer,
+            &'static MainPassSettings,
         ),
         With<ExtractedView>,
     >,
@@ -53,10 +54,15 @@ impl render_graph::Node for SchwarzschildPassNode {
             return Ok(());
         }
 
-        let (target, uniform_buffer) = match self.query.get_manual(world, view_entity) {
-            Ok(result) => result,
-            Err(_) => panic!("Camera missing component!"),
-        };
+        let (target, uniform_buffer, main_pass_settings) =
+            match self.query.get_manual(world, view_entity) {
+                Ok(result) => result,
+                Err(_) => panic!("Camera missing component!"),
+            };
+
+        if main_pass_settings.pass != MainPasses::Schwarzschild {
+            return Ok(());
+        }
 
         let trace_pipeline = match pipeline_cache.get_render_pipeline(pipeline_data.pipeline_id) {
             Some(pipeline) => pipeline,

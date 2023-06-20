@@ -1,5 +1,5 @@
 use super::{KerrPassPipelineData, ViewKerrPassUniformBuffer};
-use crate::render_pipeline::RenderGraphSettings;
+use crate::render_pipeline::{MainPassSettings, MainPasses, RenderGraphSettings};
 use bevy::{
     prelude::*,
     render::{
@@ -10,8 +10,14 @@ use bevy::{
 };
 
 pub struct KerrPassNode {
-    query:
-        QueryState<(&'static ViewTarget, &'static ViewKerrPassUniformBuffer), With<ExtractedView>>,
+    query: QueryState<
+        (
+            &'static ViewTarget,
+            &'static ViewKerrPassUniformBuffer,
+            &'static MainPassSettings,
+        ),
+        With<ExtractedView>,
+    >,
 }
 
 impl KerrPassNode {
@@ -47,10 +53,15 @@ impl render_graph::Node for KerrPassNode {
             return Ok(());
         }
 
-        let (target, uniform_buffer) = match self.query.get_manual(world, view_entity) {
-            Ok(result) => result,
-            Err(_) => panic!("Voxel camera missing component!"),
-        };
+        let (target, uniform_buffer, main_pass_settings) =
+            match self.query.get_manual(world, view_entity) {
+                Ok(result) => result,
+                Err(_) => panic!("Voxel camera missing component!"),
+            };
+
+        if main_pass_settings.pass != MainPasses::Kerr {
+            return Ok(());
+        }
 
         let trace_pipeline = match pipeline_cache.get_render_pipeline(pipeline_data.pipeline_id) {
             Some(pipeline) => pipeline,
