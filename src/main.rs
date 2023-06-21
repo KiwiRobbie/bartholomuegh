@@ -9,7 +9,7 @@ use bevy::{
     window::{PrimaryWindow, WindowResized, WindowScaleFactorChanged},
 };
 use character::CharacterEntity;
-use render_pipeline::{KerrPassSettings, MainPassSettings, SchwarzschildPassSettings};
+use render_pipeline::MainPassSettings;
 
 mod character;
 mod render_pipeline;
@@ -93,8 +93,6 @@ fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
             ..default()
         },
         MainPassSettings::default(),
-        SchwarzschildPassSettings::default(),
-        KerrPassSettings::default(),
         CharacterEntity {
             velocity: Vec3::ZERO,
             speed: 10.0,

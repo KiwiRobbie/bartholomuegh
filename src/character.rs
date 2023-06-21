@@ -1,4 +1,3 @@
-use crate::render_pipeline::SchwarzschildPassSettings;
 use bevy::{
     input::mouse::{MouseMotion, MouseWheel},
     prelude::*,
@@ -36,19 +35,14 @@ impl Plugin for CharacterPlugin {
 }
 
 fn update_character(
-    mut character: Query<(
-        &mut Transform,
-        &mut CharacterEntity,
-        &mut SchwarzschildPassSettings,
-    )>, // MainPassSettings shouldln't be here
+    mut character: Query<(&mut Transform, &mut CharacterEntity)>,
     keys: Res<Input<KeyCode>>,
     mouse: Res<Input<MouseButton>>,
     mut mouse_motion_events: EventReader<MouseMotion>,
     time: Res<Time>,
     mut mouse_wheel_events: EventReader<MouseWheel>,
 ) {
-    let (mut transform, mut character, mut schwarzschild_settings) = character.single_mut();
-    let target_velocity;
+    let (mut transform, mut character) = character.single_mut();
     // speed
     for event in mouse_wheel_events.iter() {
         character.speed *= 1.0 + event.y.min(50.0) / 100.0;
@@ -90,7 +84,7 @@ fn update_character(
     }
     input *= character.speed;
 
-    target_velocity = input.z * transform.local_z()
+    let target_velocity = input.z * transform.local_z()
         + input.x * transform.local_x()
         + input.y * transform.local_y();
 
@@ -111,9 +105,6 @@ fn update_character(
     );
 
     transform.translation += character.velocity * time.delta_seconds();
-
-    schwarzschild_settings.velocity =
-        character.velocity * schwarzschild_settings.reletavistic_scale / character.speed;
 }
 
 fn lerp(i: Vec3, f: Vec3, s: f32, dt: f32) -> Vec3 {

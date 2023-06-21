@@ -1,5 +1,8 @@
 use super::{KerrPassPipelineData, ViewKerrPassUniformBuffer};
-use crate::render_pipeline::{MainPassSettings, MainPasses, RenderGraphSettings};
+use crate::render_pipeline::{
+    general::{MainPassSettings, MetricSettings},
+    RenderGraphSettings,
+};
 use bevy::{
     prelude::*,
     render::{
@@ -12,7 +15,7 @@ use bevy::{
 pub struct KerrPassNode {
     query: QueryState<(
         &'static ViewTarget,
-        &'static ViewKerrPassUniformBuffer,
+        Option<&'static ViewKerrPassUniformBuffer>,
         &'static MainPassSettings,
     )>,
 }
@@ -55,48 +58,51 @@ impl render_graph::Node for KerrPassNode {
                 Err(_) => panic!("Camera missing component!"),
             };
 
-        if main_pass_settings.pass != MainPasses::Kerr {
-            return Ok(());
+        if let MetricSettings::Kerr(_) = main_pass_settings.metric {
+            let trace_pipeline = match pipeline_cache.get_render_pipeline(pipeline_data.pipeline_id)
+            {
+                Some(pipeline) => pipeline,
+                None => return Ok(()),
+            };
+
+            let bind_group =
+                render_context
+                    .render_device()
+                    .create_bind_group(&BindGroupDescriptor {
+                        label: Some("kerr pass bind group"),
+                        layout: &pipeline_data.bind_group_layout,
+                        entries: &[BindGroupEntry {
+                            binding: 0,
+                            resource: uniform_buffer
+                                .expect("Metric set but uniform not extracted!")
+                                .binding()
+                                .unwrap(),
+                        }],
+                    });
+
+            let render_pass_descriptor = RenderPassDescriptor {
+                label: Some("kerr pass"),
+                color_attachments: &[Some(RenderPassColorAttachment {
+                    view: target.main_texture(),
+                    resolve_target: None,
+                    ops: Operations {
+                        load: LoadOp::Load,
+                        store: true,
+                    },
+                })],
+                depth_stencil_attachment: None,
+            };
+
+            let mut render_pass = render_context
+                .command_encoder()
+                .begin_render_pass(&render_pass_descriptor);
+
+            // render_pass.set_bind_group(0, &voxel_data.bind_group, &[]);
+            render_pass.set_bind_group(0, &bind_group, &[]);
+
+            render_pass.set_pipeline(trace_pipeline);
+            render_pass.draw(0..3, 0..1);
         }
-
-        let trace_pipeline = match pipeline_cache.get_render_pipeline(pipeline_data.pipeline_id) {
-            Some(pipeline) => pipeline,
-            None => return Ok(()),
-        };
-
-        let bind_group = render_context
-            .render_device()
-            .create_bind_group(&BindGroupDescriptor {
-                label: Some("kerr pass bind group"),
-                layout: &pipeline_data.bind_group_layout,
-                entries: &[BindGroupEntry {
-                    binding: 0,
-                    resource: uniform_buffer.binding().unwrap(),
-                }],
-            });
-
-        let render_pass_descriptor = RenderPassDescriptor {
-            label: Some("kerr pass"),
-            color_attachments: &[Some(RenderPassColorAttachment {
-                view: target.main_texture(),
-                resolve_target: None,
-                ops: Operations {
-                    load: LoadOp::Load,
-                    store: true,
-                },
-            })],
-            depth_stencil_attachment: None,
-        };
-
-        let mut render_pass = render_context
-            .command_encoder()
-            .begin_render_pass(&render_pass_descriptor);
-
-        // render_pass.set_bind_group(0, &voxel_data.bind_group, &[]);
-        render_pass.set_bind_group(0, &bind_group, &[]);
-
-        render_pass.set_pipeline(trace_pipeline);
-        render_pass.draw(0..3, 0..1);
 
         Ok(())
     }

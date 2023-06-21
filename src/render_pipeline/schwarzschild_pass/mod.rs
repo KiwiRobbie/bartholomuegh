@@ -1,9 +1,8 @@
-pub use crate::render_pipeline::IntegrationMethod;
+use super::general::{IntegrationMethod, MainPassSettings, MetricSettings};
 use bevy::{
     core_pipeline::fullscreen_vertex_shader::fullscreen_shader_vertex_state,
     prelude::*,
     render::{
-        extract_component::{ExtractComponent, ExtractComponentPlugin},
         render_resource::*,
         renderer::{RenderDevice, RenderQueue},
         view::{ExtractedView, ViewTarget},
@@ -11,14 +10,13 @@ use bevy::{
     },
 };
 pub use node::SchwarzschildPassNode;
+
 mod node;
 
 pub struct SchwarzschildPassPlugin;
 
 impl Plugin for SchwarzschildPassPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugin(ExtractComponentPlugin::<SchwarzschildPassSettings>::default());
-
         // setup custom render pipeline
         app.sub_app_mut(RenderApp)
             .init_resource::<SchwarzschildPassPipelineData>()
@@ -32,8 +30,8 @@ struct SchwarzschildPassPipelineData {
     bind_group_layout: BindGroupLayout,
 }
 
-#[derive(Component, Clone, ExtractComponent)]
-pub struct SchwarzschildPassSettings {
+#[derive(Clone, PartialEq)]
+pub struct SchwarzschildSettings {
     pub surface_bool: bool,
     pub disk_bool: bool,
     pub disk_hide: bool,
@@ -51,7 +49,7 @@ pub struct SchwarzschildPassSettings {
     pub misc_bool: bool,
 }
 
-impl Default for SchwarzschildPassSettings {
+impl Default for SchwarzschildSettings {
     fn default() -> Self {
         Self {
             surface_bool: false,
@@ -98,7 +96,7 @@ pub struct ViewSchwarzschildPassUniformBuffer(UniformBuffer<TraceUniforms>);
 
 fn prepare_uniforms(
     mut commands: Commands,
-    query: Query<(Entity, &SchwarzschildPassSettings, &ExtractedView)>,
+    query: Query<(Entity, &MainPassSettings, &ExtractedView)>,
     time: Res<Time>,
     render_device: Res<RenderDevice>,
     render_queue: Res<RenderQueue>,
@@ -106,43 +104,45 @@ fn prepare_uniforms(
     let elapsed = time.elapsed_seconds_f64();
 
     for (entity, settings, view) in query.iter() {
-        let projection = view.projection;
-        let inverse_projection = projection.inverse();
-        let view = view.transform.compute_matrix();
-        let inverse_view = view.inverse();
+        if let MetricSettings::Schwarzschild(settings) = &settings.metric {
+            let projection = view.projection;
+            let inverse_projection = projection.inverse();
+            let view = view.transform.compute_matrix();
+            let inverse_view = view.inverse();
 
-        let camera = projection * inverse_view;
-        let camera_inverse = view * inverse_projection;
+            let camera = projection * inverse_view;
+            let camera_inverse = view * inverse_projection;
 
-        let uniforms = TraceUniforms {
-            camera,
-            camera_inverse,
-            velocity: settings.velocity,
-            time: elapsed as f32,
-            surface_bool: settings.surface_bool as u32,
-            disk_mode: (!settings.disk_hide) as u32
-                + (!settings.disk_hide && settings.disk_bool) as u32,
-            step_count: settings.step_count,
-            rel_error: settings.rel_error,
-            abs_error: settings.abs_error,
-            initial_step: settings.initial_step,
-            max_step: settings.max_step,
-            method: match settings.method {
-                IntegrationMethod::Rk4 => 0,
-                IntegrationMethod::Euler => 1,
-            },
-            disk_start: settings.disk_start,
-            disk_end: settings.disk_end,
-            misc_float: settings.misc_float,
-            misc_bool: settings.misc_bool as u32,
-        };
+            let uniforms = TraceUniforms {
+                camera,
+                camera_inverse,
+                velocity: Vec3::ZERO,
+                time: elapsed as f32,
+                surface_bool: settings.surface_bool as u32,
+                disk_mode: (!settings.disk_hide) as u32
+                    + (!settings.disk_hide && settings.disk_bool) as u32,
+                step_count: settings.step_count,
+                rel_error: settings.rel_error,
+                abs_error: settings.abs_error,
+                initial_step: settings.initial_step,
+                max_step: settings.max_step,
+                method: match settings.method {
+                    IntegrationMethod::Rk4 => 0,
+                    IntegrationMethod::Euler => 1,
+                },
+                disk_start: settings.disk_start,
+                disk_end: settings.disk_end,
+                misc_float: settings.misc_float,
+                misc_bool: settings.misc_bool as u32,
+            };
 
-        let mut uniform_buffer = UniformBuffer::from(uniforms);
-        uniform_buffer.write_buffer(&render_device, &render_queue);
+            let mut uniform_buffer = UniformBuffer::from(uniforms);
+            uniform_buffer.write_buffer(&render_device, &render_queue);
 
-        commands
-            .entity(entity)
-            .insert(ViewSchwarzschildPassUniformBuffer(uniform_buffer));
+            commands
+                .entity(entity)
+                .insert(ViewSchwarzschildPassUniformBuffer(uniform_buffer));
+        }
     }
 }
 

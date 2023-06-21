@@ -1,40 +1,22 @@
-use self::kerr_pass::{KerrPassNode, KerrPassPlugin};
-use self::schwarzschild_pass::{SchwarzschildPassNode, SchwarzschildPassPlugin};
+use self::{
+    kerr_pass::{KerrPassNode, KerrPassPlugin},
+    schwarzschild_pass::{SchwarzschildPassNode, SchwarzschildPassPlugin},
+};
 use bevy::core_pipeline::upscaling::UpscalingNode;
 use bevy::render::render_graph::{RenderGraph, SlotInfo, SlotType};
 use bevy::{
     prelude::*,
     render::{
-        extract_component::{ExtractComponent, ExtractComponentPlugin},
+        extract_component::ExtractComponentPlugin,
         extract_resource::{ExtractResource, ExtractResourcePlugin},
         RenderApp,
     },
 };
-pub use kerr_pass::KerrPassSettings;
-pub use schwarzschild_pass::SchwarzschildPassSettings;
+pub use general::{MainPassSettings, MetricSettings};
 
+mod general;
 mod kerr_pass;
 mod schwarzschild_pass;
-
-#[derive(Component, Clone, ExtractComponent, Default, Debug)]
-pub struct MainPassSettings {
-    pub updated: bool,
-    pub pass: MainPasses,
-}
-
-#[derive(Component, Clone, Default, Debug, PartialEq, Eq)]
-pub enum MainPasses {
-    Kerr,
-    #[default]
-    Schwarzschild,
-}
-
-#[derive(Clone, Copy, PartialEq, Default)]
-pub enum IntegrationMethod {
-    Rk4,
-    #[default]
-    Euler,
-}
 
 pub struct RenderPlugin;
 
