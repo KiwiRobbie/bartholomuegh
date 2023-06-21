@@ -30,7 +30,7 @@ struct KerrPassPipelineData {
     bind_group_layout: BindGroupLayout,
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Reflect)]
 pub struct KerrSettings {
     pub surface_bool: bool,
     pub disk_bool: bool,

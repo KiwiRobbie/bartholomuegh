@@ -30,7 +30,7 @@ struct SchwarzschildPassPipelineData {
     bind_group_layout: BindGroupLayout,
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Reflect)]
 pub struct SchwarzschildSettings {
     pub surface_bool: bool,
     pub disk_bool: bool,

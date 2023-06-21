@@ -15,7 +15,7 @@ pub enum MetricSettings {
     Schwarzschild(SchwarzschildSettings),
 }
 
-#[derive(Clone, Copy, PartialEq, Default)]
+#[derive(Clone, Copy, PartialEq, Default, Reflect)]
 pub enum IntegrationMethod {
     Rk4,
     #[default]
@@ -84,3 +84,12 @@ pub struct TraceUniforms {
 //             .insert(ViewSchwarzschildPassUniformBuffer(uniform_buffer));
 //     }
 // }
+
+impl std::fmt::Debug for MetricSettings {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MetricSettings::Kerr(_) => write!(f, "Kerr"),
+            MetricSettings::Schwarzschild(_) => write!(f, "Schwarzschild"),
+        }
+    }
+}

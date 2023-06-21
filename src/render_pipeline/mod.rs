@@ -13,6 +13,7 @@ use bevy::{
     },
 };
 pub use general::{MainPassSettings, MetricSettings};
+pub use {kerr_pass::KerrSettings, schwarzschild_pass::SchwarzschildSettings};
 
 mod general;
 mod kerr_pass;
