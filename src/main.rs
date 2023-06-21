@@ -34,6 +34,7 @@ fn main() {
                 ..default()
             }),
     )
+    .add_plugin(bevy_inspector_egui::DefaultInspectorConfigPlugin)
     .add_plugin(FrameTimeDiagnosticsPlugin::default())
     .add_plugin(render_pipeline::RenderPlugin)
     .add_plugin(character::CharacterPlugin)
@@ -66,7 +67,7 @@ fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
         },
         TextureDimension::D2,
         &[0, 255, 0, 255],
-        TextureFormat::Rgba8UnormSrgb,
+        TextureFormat::Rgba16Float,
     );
     image.texture_descriptor.usage =
         TextureUsages::TEXTURE_BINDING | TextureUsages::RENDER_ATTACHMENT;
@@ -115,7 +116,7 @@ fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
                 hdr: true,
                 ..default()
             },
-            tonemapping: Tonemapping::TonyMcMapface,
+            tonemapping: Tonemapping::ReinhardLuminance,
             ..default()
         },
         BloomSettings::default(),

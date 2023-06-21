@@ -9,7 +9,6 @@ use bevy::diagnostic::FrameTimeDiagnosticsPlugin;
 use bevy::{
     core_pipeline::{bloom::BloomSettings, fxaa::Fxaa, tonemapping::Tonemapping},
     prelude::*,
-    reflect::TypeRegistryInternal,
     window::PrimaryWindow,
 };
 use bevy_inspector_egui::{
@@ -33,21 +32,13 @@ fn ui_system(
         &mut KerrPassSettings,
         &mut SchwarzschildPassSettings,
         &mut Transform,
-        Option<&mut BloomSettings>,
-        Option<&mut Tonemapping>,
-        Option<&mut Fxaa>,
         Option<&mut Projection>,
     )>,
+    mut two_d_camera_query: Query<(&mut BloomSettings, &mut Tonemapping, &mut Fxaa)>,
     window: Query<Entity, With<PrimaryWindow>>,
     diagnostics: Res<Diagnostics>,
+    type_registry: ResMut<AppTypeRegistry>,
 ) {
-    // voxel_graph.add_node("kerr_pass", kerr_node);
-    // voxel_graph.add_slot_edge(input_node_id, "view_entity", "kerr_pass", "view");
-
-    // RenderGraph::remove_slot_edge(&mut self, output_node, input_node);
-
-    // //
-
     egui::Window::new("Settings")
         .anchor(egui::Align2::RIGHT_TOP, [-5.0, 5.0])
         .show(contexts.ctx_for_window_mut(window.single()), |ui| {
@@ -62,9 +53,6 @@ fn ui_system(
                     mut kerr_pass_settings,
                     mut schwarzschild_pass_settings,
                     mut transform,
-                    bloom_settings,
-                    tonemapping,
-                    fxaa,
                     projection,
                 ),
             ) in camera_settings_query.iter_mut().enumerate()
@@ -283,22 +271,6 @@ fn ui_system(
                 CollapsingHeader::new("General")
                     .default_open(true)
                     .show(ui, |ui| {
-                        if let Some(bloom_settings) = bloom_settings {
-                            ui.add(
-                                Slider::new(&mut bloom_settings.into_inner().intensity, 0.0..=1.0)
-                                    .text("Bloom"),
-                            );
-                        }
-
-                        let registry = &TypeRegistryInternal::default();
-                        if let Some(tonemapping) = tonemapping {
-                            ui_for_value(tonemapping.into_inner(), ui, registry);
-                        }
-
-                        if let Some(fxaa) = fxaa {
-                            ui_for_value(fxaa.into_inner(), ui, registry);
-                        }
-
                         if let Some(projection) = projection {
                             match projection.into_inner() {
                                 Projection::Orthographic(orthographic_projection) => {
@@ -334,5 +306,19 @@ fn ui_system(
                         });
                     });
             }
+
+            CollapsingHeader::new("Secondary Camera")
+                .default_open(true)
+                .show(ui, |ui| {
+                    let (bloom_settings, tonemapping, fxaa) = two_d_camera_query.single_mut();
+
+                    ui.add(
+                        Slider::new(&mut bloom_settings.into_inner().intensity, 0.0..=1.0)
+                            .text("Bloom"),
+                    );
+
+                    ui_for_value(tonemapping.into_inner(), ui, &type_registry.read());
+                    ui_for_value(fxaa.into_inner(), ui, &type_registry.read());
+                });
         });
 }
