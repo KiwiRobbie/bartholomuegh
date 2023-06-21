@@ -309,6 +309,7 @@ dependencies = [
  "bevy-inspector-egui",
  "bevy_math",
  "bevy_mod_debugdump",
+ "console_error_panic_hook",
  "plotters",
 ]
 

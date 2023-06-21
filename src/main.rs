@@ -8,6 +8,9 @@ mod render_pipeline;
 mod ui;
 
 fn main() {
+    #[cfg(target_arch = "wasm32")]
+    console_error_panic_hook::set_once();
+
     let mut app = App::new();
     app.add_plugins(
         DefaultPlugins
@@ -40,7 +43,7 @@ fn main() {
 }
 
 fn setup(mut commands: Commands) {
-    let character_transform = Transform::from_xyz(2.0, 2.0, -1.0).looking_at(Vec3::ZERO, Vec3::Y);
+    let character_transform = Transform::from_xyz(10.0, 1.0, 10.0).looking_at(Vec3::ZERO, Vec3::Y);
     commands.spawn((
         Camera3dBundle {
             transform: character_transform,
@@ -65,7 +68,6 @@ fn setup(mut commands: Commands) {
             velocity: Vec3::ZERO,
             speed: 10.0,
             grounded: false,
-            in_spectator: true,
             look_at: -character_transform.local_z(),
             up: Vec3::Y,
         },

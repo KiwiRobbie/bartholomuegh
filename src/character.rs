@@ -2,7 +2,6 @@ use crate::render_pipeline::SchwarzschildPassSettings;
 use bevy::{
     input::mouse::{MouseMotion, MouseWheel},
     prelude::*,
-    window::{CursorGrabMode, PrimaryWindow},
 };
 
 const SENSITIVITY: f32 = 0.004;
@@ -11,7 +10,6 @@ const SENSITIVITY: f32 = 0.004;
 pub struct CharacterEntity {
     pub speed: f32,
     pub velocity: Vec3,
-    pub in_spectator: bool,
     pub grounded: bool,
     pub look_at: Vec3,
     pub up: Vec3,
@@ -22,7 +20,6 @@ impl Default for CharacterEntity {
         Self {
             speed: 10.0,
             velocity: Vec3::ZERO,
-            in_spectator: true,
             grounded: false,
             look_at: Vec3::Z,
             up: Vec3::Y,
@@ -34,23 +31,8 @@ pub struct CharacterPlugin;
 
 impl Plugin for CharacterPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(setup_character)
-            .add_system(update_character);
+        app.add_system(update_character);
     }
-}
-
-fn setup_character(mut primary_query: Query<&mut Window, With<PrimaryWindow>>) {
-    toggle_grab_cursor(&mut primary_query.single_mut());
-}
-
-/// Grabs/ungrabs mouse cursor
-fn toggle_grab_cursor(window: &mut Window) {
-    window.cursor.grab_mode = match window.cursor.grab_mode {
-        CursorGrabMode::Locked => CursorGrabMode::None,
-        CursorGrabMode::None => CursorGrabMode::Locked,
-        _ => CursorGrabMode::Locked,
-    };
-    window.cursor.visible = !window.cursor.visible;
 }
 
 fn update_character(
@@ -60,25 +42,20 @@ fn update_character(
         &mut SchwarzschildPassSettings,
     )>, // MainPassSettings shouldln't be here
     keys: Res<Input<KeyCode>>,
+    mouse: Res<Input<MouseButton>>,
     mut mouse_motion_events: EventReader<MouseMotion>,
     time: Res<Time>,
-    mut primary_query: Query<&mut Window, With<PrimaryWindow>>,
     mut mouse_wheel_events: EventReader<MouseWheel>,
 ) {
-    let mut window = primary_query.single_mut();
-    if keys.just_pressed(KeyCode::Escape) {
-        toggle_grab_cursor(&mut window);
-    }
-
     let (mut transform, mut character, mut schwarzschild_settings) = character.single_mut();
     let target_velocity;
-    if window.cursor.grab_mode == CursorGrabMode::Locked {
-        // speed
-        for event in mouse_wheel_events.iter() {
-            character.speed *= 1.0 + event.y.min(50.0) / 100.0;
-        }
+    // speed
+    for event in mouse_wheel_events.iter() {
+        character.speed *= 1.0 + event.y.min(50.0) / 100.0;
+    }
 
-        // rotation
+    // rotation
+    if mouse.pressed(MouseButton::Left) {
         let mut mouse_delta = Vec2::new(0.0, 0.0);
         for event in mouse_motion_events.iter() {
             mouse_delta += event.delta;
@@ -100,48 +77,24 @@ fn update_character(
 
         let pos = transform.translation;
         transform.look_at(pos + character.look_at, character.up);
-
-        // movement
-        let mut input = Vec3::new(
-            (keys.pressed(KeyCode::D) as i32 - keys.pressed(KeyCode::A) as i32) as f32,
-            (keys.pressed(KeyCode::Space) as i32 - keys.pressed(KeyCode::LShift) as i32) as f32,
-            (keys.pressed(KeyCode::S) as i32 - keys.pressed(KeyCode::W) as i32) as f32,
-        );
-        if input != Vec3::ZERO {
-            input = input.normalize();
-        }
-        input *= character.speed;
-
-        // if character.in_spectator {
-        target_velocity = input.z * transform.local_z()
-            + input.x * transform.local_x()
-            + input.y * transform.local_y();
-        // } else {
-        //     if voxel_physics.velocity.y == 0.0 {
-        //         character.grounded = true;
-        //     }
-        //     if input.y > 0.0 && character.grounded {
-        //         voxel_physics.velocity.y = 5.0;
-        //         character.grounded = false;
-        //     }
-        //     voxel_physics.velocity += Vec3::new(0.0, -9.81 * time.delta_seconds(), 0.0);
-
-        //     let plane_forward = transform.local_x().cross(Vec3::Y).normalize();
-        //     target_velocity = input.z * plane_forward
-        //         + input.x * transform.local_x()
-        //         + voxel_physics.velocity.y * Vec3::Y;
-        // }
-    } else {
-        target_velocity = Vec3::splat(0.0);
     }
 
-    let acceleration: f32 = if character.in_spectator {
-        0.03
-    } else if character.grounded {
-        0.03
-    } else {
-        0.01
-    };
+    // movement
+    let mut input = Vec3::new(
+        (keys.pressed(KeyCode::D) as i32 - keys.pressed(KeyCode::A) as i32) as f32,
+        (keys.pressed(KeyCode::Space) as i32 - keys.pressed(KeyCode::LShift) as i32) as f32,
+        (keys.pressed(KeyCode::S) as i32 - keys.pressed(KeyCode::W) as i32) as f32,
+    );
+    if input != Vec3::ZERO {
+        input = input.normalize();
+    }
+    input *= character.speed;
+
+    target_velocity = input.z * transform.local_z()
+        + input.x * transform.local_x()
+        + input.y * transform.local_y();
+
+    let acceleration = if character.grounded { 0.03 } else { 0.01 };
 
     character.velocity = lerp(
         character.velocity,
