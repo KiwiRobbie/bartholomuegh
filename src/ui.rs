@@ -9,7 +9,7 @@ use bevy::{
 };
 use bevy_inspector_egui::{
     bevy_egui::{EguiContexts, EguiPlugin},
-    egui::{self, CollapsingHeader, Color32, ComboBox, DragValue, RichText, Slider},
+    egui::{self, CollapsingHeader, ComboBox, DragValue, Slider},
     reflect_inspector::ui_for_value,
 };
 
@@ -76,41 +76,17 @@ fn ui_system(
                             .default_open(true)
                             .show(ui, |ui| {
                                 if let Some(projection) = projection {
-                                    match projection.into_inner() {
-                                        Projection::Orthographic(orthographic_projection) => {
-                                            ui.add(
-                                                Slider::new(
-                                                    &mut orthographic_projection.scale,
-                                                    0.0..=1000.0,
-                                                )
-                                                .text("Orthographic scale"),
-                                            );
-                                        }
-                                        Projection::Perspective(perspective_projection) => {
-                                            ui.add(
-                                                Slider::new(
-                                                    &mut perspective_projection.fov,
-                                                    0.0..=3.1415,
-                                                )
-                                                .logarithmic(true)
-                                                .text("Perspective fov"),
-                                            );
-                                        }
-                                    }
+                                    ui_for_value(
+                                        projection.into_inner(),
+                                        ui,
+                                        &type_registry.read(),
+                                    );
                                 }
 
                                 ui.horizontal(|ui| {
-                                    ui.label(
-                                        RichText::new("X: ").color(Color32::from_rgb(204, 25, 38)),
-                                    );
+                                    ui.label("pos ");
                                     ui.add(DragValue::new(&mut transform.translation.x).speed(0.1));
-                                    ui.label(
-                                        RichText::new("Y: ").color(Color32::from_rgb(51, 178, 51)),
-                                    );
                                     ui.add(DragValue::new(&mut transform.translation.y).speed(0.1));
-                                    ui.label(
-                                        RichText::new("Z: ").color(Color32::from_rgb(25, 63, 204)),
-                                    );
                                     ui.add(DragValue::new(&mut transform.translation.z).speed(0.1));
                                 });
                             });
