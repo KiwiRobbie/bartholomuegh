@@ -67,7 +67,6 @@ fn fbm(v: vec3<f32>) -> f32 {
 }
 
 fn skybox(dir: vec3<f32>) -> vec3<f32> {
-
     let color = BlackBodyRadiation(1000.0 + pow(10.0, 4.0 * noise(200.0 * dir)));
     let brightness = pow(
         noise(100.0 * dir) * noise(200.0 * dir) * noise(400.0 * dir),

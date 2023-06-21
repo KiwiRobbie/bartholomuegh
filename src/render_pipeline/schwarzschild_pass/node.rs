@@ -44,7 +44,6 @@ impl render_graph::Node for SchwarzschildPassNode {
     ) -> Result<(), render_graph::NodeRunError> {
         let view_entity = graph.get_input_entity("view")?;
         let pipeline_cache = world.resource::<PipelineCache>();
-        // let voxel_data = world.get_resource::<VoxelData>().unwrap();
         let pipeline_data = world
             .get_resource::<SchwarzschildPassPipelineData>()
             .unwrap();

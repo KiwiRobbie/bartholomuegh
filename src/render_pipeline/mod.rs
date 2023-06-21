@@ -1,17 +1,14 @@
 use self::kerr_pass::{KerrPassNode, KerrPassPlugin};
 use self::schwarzschild_pass::{SchwarzschildPassNode, SchwarzschildPassPlugin};
+use bevy::core_pipeline::upscaling::UpscalingNode;
+use bevy::render::render_graph::{RenderGraph, SlotInfo, SlotType};
 use bevy::{
-    core_pipeline::{
-        bloom::BloomNode, fxaa::FxaaNode, tonemapping::TonemappingNode, upscaling::UpscalingNode,
-    },
     prelude::*,
     render::{
         extract_component::{ExtractComponent, ExtractComponentPlugin},
         extract_resource::{ExtractResource, ExtractResourcePlugin},
-        render_graph::{RenderGraph, SlotInfo, SlotType},
         RenderApp,
     },
-    ui::UiPassNode,
 };
 pub use kerr_pass::KerrPassSettings;
 pub use schwarzschild_pass::SchwarzschildPassSettings;
@@ -61,33 +58,16 @@ impl Plugin for RenderPlugin {
 
         let kerr_node = KerrPassNode::new(&mut render_app.world);
         let schwarzschild_node = SchwarzschildPassNode::new(&mut render_app.world);
-
-        let bloom = BloomNode::new(&mut render_app.world);
-        let tonemapping = TonemappingNode::new(&mut render_app.world);
-        let fxaa = FxaaNode::new(&mut render_app.world);
-        let ui = UiPassNode::new(&mut render_app.world);
-        let upscaling = UpscalingNode::new(&mut render_app.world);
+        let upscalling_node = UpscalingNode::new(&mut render_app.world);
 
         render_graph.add_node("schwarzschild_pass", kerr_node);
         render_graph.add_node("kerr_pass", schwarzschild_node);
-        render_graph.add_node("bloom", bloom);
-        render_graph.add_node("tonemapping", tonemapping);
-        render_graph.add_node("fxaa", fxaa);
-        render_graph.add_node("ui", ui);
-        render_graph.add_node("upscaling", upscaling);
+        render_graph.add_node("upscaling", upscalling_node);
         render_graph.add_slot_edge(input_node_id, "view_entity", "schwarzschild_pass", "view");
         render_graph.add_slot_edge(input_node_id, "view_entity", "kerr_pass", "view");
-        render_graph.add_slot_edge(input_node_id, "view_entity", "bloom", "view");
-        render_graph.add_slot_edge(input_node_id, "view_entity", "tonemapping", "view");
-        render_graph.add_slot_edge(input_node_id, "view_entity", "fxaa", "view");
-        render_graph.add_slot_edge(input_node_id, "view_entity", "ui", "view");
         render_graph.add_slot_edge(input_node_id, "view_entity", "upscaling", "view");
-        render_graph.add_node_edge("schwarzschild_pass", "bloom");
-        render_graph.add_node_edge("kerr_pass", "bloom");
-        render_graph.add_node_edge("bloom", "tonemapping");
-        render_graph.add_node_edge("tonemapping", "fxaa");
-        render_graph.add_node_edge("fxaa", "ui");
-        render_graph.add_node_edge("ui", "upscaling");
+        render_graph.add_node_edge("schwarzschild_pass", "upscaling");
+        render_graph.add_node_edge("kerr_pass", "upscaling");
 
         let mut graph = render_app.world.resource_mut::<RenderGraph>();
         graph.add_sub_graph("main_render", render_graph);

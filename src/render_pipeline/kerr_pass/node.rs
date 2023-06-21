@@ -5,19 +5,16 @@ use bevy::{
     render::{
         render_graph::{self, SlotInfo, SlotType},
         render_resource::*,
-        view::{ExtractedView, ViewTarget},
+        view::ViewTarget,
     },
 };
 
 pub struct KerrPassNode {
-    query: QueryState<
-        (
-            &'static ViewTarget,
-            &'static ViewKerrPassUniformBuffer,
-            &'static MainPassSettings,
-        ),
-        With<ExtractedView>,
-    >,
+    query: QueryState<(
+        &'static ViewTarget,
+        &'static ViewKerrPassUniformBuffer,
+        &'static MainPassSettings,
+    )>,
 }
 
 impl KerrPassNode {
@@ -45,7 +42,6 @@ impl render_graph::Node for KerrPassNode {
     ) -> Result<(), render_graph::NodeRunError> {
         let view_entity = graph.get_input_entity("view")?;
         let pipeline_cache = world.resource::<PipelineCache>();
-        // let voxel_data = world.get_resource::<VoxelData>().unwrap();
         let pipeline_data = world.get_resource::<KerrPassPipelineData>().unwrap();
         let render_graph_settings = world.get_resource::<RenderGraphSettings>().unwrap();
 
@@ -56,7 +52,7 @@ impl render_graph::Node for KerrPassNode {
         let (target, uniform_buffer, main_pass_settings) =
             match self.query.get_manual(world, view_entity) {
                 Ok(result) => result,
-                Err(_) => panic!("Voxel camera missing component!"),
+                Err(_) => panic!("Camera missing component!"),
             };
 
         if main_pass_settings.pass != MainPasses::Kerr {
